@@ -1,6 +1,5 @@
 #include "timer.h"
 #include "led.h"
-#include "bsp_dht11.h"
 #include "usart.h"
 #include "os_system.h"
 #include "Common.h"
@@ -54,7 +53,6 @@ void TIM3_IRQHandler(void) // TIM3中断
 {
 	if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET) // 检查指定的TIM中断发生与否:TIM 中断源
 	{
-
 
 		// os_clock_interrupt_handle();
 

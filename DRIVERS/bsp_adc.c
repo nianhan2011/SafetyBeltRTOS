@@ -1,7 +1,6 @@
 #include "bsp_adc.h"
-#include "vdf_710.h"
-#include "sk_hmi.h"
-__IO uint16_t ADC_ConvertedValue[NOFCHANEL]={0};
+
+__IO uint16_t ADC_ConvertedValue[NOFCHANEL]={0,0,0};
 __IO float ADC_ConvertedValueLocal[NOFCHANEL];        
 __IO uint8_t Attitude_Alarm;        
 
@@ -10,14 +9,14 @@ static void ADCx_GPIO_Config(void)
 	GPIO_InitTypeDef GPIO_InitStructure;
 	
 	// 打开 ADC IO端口时钟
-	// ADC_GPIO_APBxClock_FUN ( RCC_APB2Periph_GPIOA, ENABLE );
+	ADC_GPIO_APBxClock_FUN ( RCC_APB2Periph_GPIOA, ENABLE );
 	ADC_GPIO_APBxClock_FUN ( RCC_APB2Periph_GPIOB, ENABLE );
 
 	// 配置 ADC IO 引脚模式
-	// GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_6;
-	// GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_6;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
 	// 初始化 ADC IO
-	// GPIO_Init(GPIOA, &GPIO_InitStructure);	
+	GPIO_Init(GPIOA, &GPIO_InitStructure);	
 	
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
@@ -76,9 +75,9 @@ static void ADCx_Mode_Config(void)
 	//8分频 72/8 = 9
 	RCC_ADCCLKConfig(RCC_PCLK2_Div8);
 	
-	// ADC_RegularChannelConfig(ADC_x, ADC_Channel_5, 1, ADC_SampleTime_239Cycles5);
-	// ADC_RegularChannelConfig(ADC_x, ADC_Channel_6, 2, ADC_SampleTime_239Cycles5);
-	ADC_RegularChannelConfig(ADC_x, ADC_Channel_8, 1, ADC_SampleTime_239Cycles5);
+	ADC_RegularChannelConfig(ADC_x, ADC_Channel_5, 1, ADC_SampleTime_239Cycles5);
+	ADC_RegularChannelConfig(ADC_x, ADC_Channel_6, 2, ADC_SampleTime_239Cycles5);
+	ADC_RegularChannelConfig(ADC_x, ADC_Channel_8, 3, ADC_SampleTime_239Cycles5);
 
 
  	// 使能ADC DMA 请求
@@ -105,32 +104,19 @@ void ADCx_Init(void)
 
 void GET_ADC() {
 	
-	while (1)
-	{
-		/* code */
-		ADC_ConvertedValueLocal[0] = (float)ADC_ConvertedValue[0] / 4096 * 3.3;
-		if (ADC_ConvertedValueLocal[0] >= 1.5 ) 
-		{
-			if (sk_coil_register[2] ==1 ) 
-			{
-				should_blower_open = 1;
-			}
-		}
-
-			vTaskDelay(30); // 丢弃剩余的时间片资源
-	}
 	
-	// ADC_ConvertedValueLocal[1] =(float) ADC_ConvertedValue[1]/4096*3.3;
-	// ADC_ConvertedValueLocal[2] =(float) ADC_ConvertedValue[2]/4096*3.3;
+	ADC_ConvertedValueLocal[0] =(float) ADC_ConvertedValue[0]/4096*3.3;
+	ADC_ConvertedValueLocal[1] =(float) ADC_ConvertedValue[1]/4096*3.3;
+	ADC_ConvertedValueLocal[2] =(float) ADC_ConvertedValue[2]/4096*3.3;
 	
-	// if (ADC_ConvertedValueLocal[0] >=0 && ADC_ConvertedValueLocal[0] <= 1.6) 
-    // {
-	// 	Attitude_Alarm = 1;
-    // } else {
+	if (ADC_ConvertedValueLocal[0] >=0 && ADC_ConvertedValueLocal[0] <= 1.6) 
+    {
+		Attitude_Alarm = 1;
+    } else {
 		
-	// 	Attitude_Alarm = 0;
+		Attitude_Alarm = 0;
 
-	// }
+	}
 
 	
 
