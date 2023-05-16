@@ -3,7 +3,7 @@
 
 #include "Common.h"
 
-void LED_Init(void);
+void led_init(void);
 void turn_led(void);
 
 #endif

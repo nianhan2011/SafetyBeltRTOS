@@ -122,3 +122,21 @@ void UART5_IRQHandler(void)
 		ucCh = USART_ReceiveData(UART5);
 	}
 }
+
+static void usart_send_byte(USART_TypeDef *pUSARTx, uint8_t data)
+{
+	USART_SendData(pUSARTx, data);
+	while (USART_GetFlagStatus(pUSARTx, USART_FLAG_TXE) == RESET)
+		;
+}
+
+void usart5_send_array(uint8_t *array, uint8_t num)
+{
+	uint8_t i;
+	for (i = 0; i < num; i++)
+	{
+		usart_send_byte(UART5, array[i]);
+	}
+	while (USART_GetFlagStatus(UART5, USART_FLAG_TC) == RESET)
+		;
+}

@@ -3,7 +3,10 @@
 #include "drv_opt.h"
 #include "string.h"
 #include "stdlib.h"
+#include "Common.h"
 
+u8 cmd1[30] = "https://www.wit-motion.cn/\n";
+u8 cmd2[20] = {0xFF, 0xAA, 0x0d, 0x03, 0x00, 0x0a};
 static Drv_Height_t drv_height_t;
 Drv_Height_pt drv_height_pt;
 
@@ -40,6 +43,36 @@ void get_barometric(void)
     }
 }
 
+void set_height_zero(void)
+{
+
+    // u32 isOpen;
+
+    // xTaskNotifyWait(0x0, 0xFFFFFFFF, &isOpen, portMAX_DELAY);
+
+    // if (isOpen) {
+    while ((drv_height_pt->height > 1.0) || (drv_height_pt->height < -1.0))
+    {
+//        taskENTER_CRITICAL();
+
+         USART_printf(UART5, cmd1);
+//        timtick->delay(10);
+	    vTaskDelay(100);
+        usart5_send_array(cmd2, 6);
+//        taskEXIT_CRITICAL();
+
+        vTaskDelay(100);
+    }
+
+    vTaskDelete(NULL);
+
+    // USART_printf(UART5, cmd1);
+    // vTaskDelay(100);
+    // usart5_send_array(cmd2, 6);
+
+    // }
+}
+
 void init_drv_height(void)
 {
     USART5_Init();
@@ -48,4 +81,6 @@ void init_drv_height(void)
     drv_height_pt->lock = thread_cslock_init("drv_height");
     memset(drv_height_pt->buff, 0, 20);
     drv_height_pt->buff_length = 0;
+    drv_height_pt->set_height_zero = set_height_zero;
+    drv_height_pt->get_barometric = get_barometric;
 }

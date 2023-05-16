@@ -900,6 +900,21 @@
               <FileType>5</FileType>
               <FilePath>.\DRIVERS\led.h</FilePath>
             </File>
+            <File>
+              <FileName>drv_key.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\DRIVERS\drv_key.c</FilePath>
+            </File>
+            <File>
+              <FileName>drv_key.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\DRIVERS\drv_key.h</FilePath>
+            </File>
+            <File>
+              <FileName>drv_timer_tick.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\DRIVERS\drv_timer_tick.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

@@ -1,7 +1,7 @@
 #include "led.h"
 #include "os_system__typedef.h"
 
-void LED_Init(void)
+void led_init(void)
 {
 	GPIO_InitTypeDef GPIO_InitStructure;
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_AFIO, ENABLE); // 使能A端口时钟

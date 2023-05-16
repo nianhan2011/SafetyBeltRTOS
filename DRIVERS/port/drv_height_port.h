@@ -5,5 +5,6 @@
 extern QueueHandle_t drv_height_queue;
 
 void USART5_Init(void);
+void usart5_send_array(uint8_t *array, uint8_t num);
 
 #endif
