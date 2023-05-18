@@ -915,6 +915,26 @@
               <FileType>1</FileType>
               <FilePath>.\DRIVERS\drv_timer_tick.c</FilePath>
             </File>
+            <File>
+              <FileName>drv_adc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\DRIVERS\drv_adc.c</FilePath>
+            </File>
+            <File>
+              <FileName>drv_adc.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\DRIVERS\drv_adc.h</FilePath>
+            </File>
+            <File>
+              <FileName>drv_voice.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\DRIVERS\drv_voice.c</FilePath>
+            </File>
+            <File>
+              <FileName>drv_voice.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\DRIVERS\drv_voice.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

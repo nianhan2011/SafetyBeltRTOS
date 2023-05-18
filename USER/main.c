@@ -9,6 +9,9 @@
 #include "os_system__typedef.h"
 #include "drv_opt.h"
 #include "drv_key.h"
+#include "drv_adc.h"
+#include "drv_voice.h"
+
 void main_task(void);
 
 int main(void)
@@ -26,21 +29,18 @@ void main_task(void)
     init_drv_timer_tick();
     led_init();
     key_init();
+    init_adc();
     init_drv_height();
+    init_voice();
 
     vTaskDelay(500);
 
     taskENTER_CRITICAL(); // 进入临界区
 
-    // thread_create(sk_proc, "sk_proc", 1024, NULL, 2, NULL);
-    // thread_create(led_turn, "led_turn", 1024, NULL, 2, NULL);
-    // thread_create(vdf_receive_proc, "vdf_receive_proc", 1024, NULL, 2, NULL);
-    // thread_create(vdf_send_proc, "vdf_send_proc", 1024, NULL, 2, NULL);
-    // thread_create(GET_ADC, "GET_ADC", 512, NULL, 2, NULL);
-
     thread_create(turn_led, "turn_led", 128, NULL, 2, NULL);
     thread_create(drv_height_pt->get_barometric, "get_barometric", 1024, NULL, 2, NULL);
     thread_create(key_proc, "key_proc", 1024, NULL, 2, NULL);
+    // thread_create(drv_adc_pt->get_adc, "get_adc", 1024, NULL, 2, NULL);
 
     vTaskDelete(NULL);   // 删除AppTaskCreate任务
     taskEXIT_CRITICAL(); // 退出临界区

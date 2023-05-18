@@ -4,8 +4,8 @@
 
 #include "stm32f10x.h"
 
-// ×¢Òâ£ºÓÃ×÷ADC²É¼¯µÄIO±ØÐëÃ»ÓÐ¸´ÓÃ£¬·ñÔò²É¼¯µçÑ¹»áÓÐÓ°Ïì
-/********************ADC1ÊäÈëÍ¨µÀ£¨Òý½Å£©ÅäÖÃ**************************/
+// ×¢ï¿½â£ºï¿½ï¿½ï¿½ï¿½ADCï¿½É¼ï¿½ï¿½ï¿½IOï¿½ï¿½ï¿½ï¿½Ã»ï¿½Ð¸ï¿½ï¿½Ã£ï¿½ï¿½ï¿½ï¿½ï¿½É¼ï¿½ï¿½ï¿½Ñ¹ï¿½ï¿½ï¿½ï¿½Ó°ï¿½ï¿½
+/********************ADC1ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½ï¿½ï¿½**************************/
 #define    ADC_APBxClock_FUN             RCC_APB2PeriphClockCmd
 #define    ADC_CLK                       RCC_APB2Periph_ADC1
 
@@ -13,12 +13,12 @@
 #define    ADC_GPIO_CLK                  RCC_APB2Periph_GPIOC  
 #define    ADC_PORT                      GPIOC
 
-// ×¢Òâ
-// 1-PC0 ÔÚ°ÔµÀÀïÃæ½ÓµÄÊÇ·äÃùÆ÷£¬Ä¬ÈÏ±»À­µÍ
-// 2-PC0 ÔÚÖ¸ÄÏÕßÀïÃæ½ÓµÄÊÇSPI FLASHµÄ Æ¬Ñ¡£¬Ä¬ÈÏ±»À­¸ß
-// ËùÒÔ PC0 ×ö ADC ×ª»»Í¨µÀµÄÊ±ºò£¬½á¹û¿ÉÄÜ»áÓÐÎó²î
+// ×¢ï¿½ï¿½
+// 1-PC0 ï¿½Ú°Ôµï¿½ï¿½ï¿½ï¿½ï¿½Óµï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¬ï¿½Ï±ï¿½ï¿½ï¿½ï¿½ï¿½
+// 2-PC0 ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Óµï¿½ï¿½ï¿½SPI FLASHï¿½ï¿½ Æ¬Ñ¡ï¿½ï¿½Ä¬ï¿½Ï±ï¿½ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ PC0 ï¿½ï¿½ ADC ×ªï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ò£¬½ï¿½ï¿½ï¿½ï¿½ï¿½Ü»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-// ×ª»»Í¨µÀ¸öÊý
+// ×ªï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 #define    NOFCHANEL										 3
 
 #define    ADC_PIN1                      GPIO_Pin_0
@@ -40,18 +40,23 @@
 #define    ADC_CHANNEL6                  ADC_Channel_15
 
 
-// ADC1 ¶ÔÓ¦ DMA1Í¨µÀ1£¬ADC3¶ÔÓ¦DMA2Í¨µÀ5£¬ADC2Ã»ÓÐDMA¹¦ÄÜ
+// ADC1 ï¿½ï¿½Ó¦ DMA1Í¨ï¿½ï¿½1ï¿½ï¿½ADC3ï¿½ï¿½Ó¦DMA2Í¨ï¿½ï¿½5ï¿½ï¿½ADC2Ã»ï¿½ï¿½DMAï¿½ï¿½ï¿½ï¿½
 #define    ADC_x                         ADC1
 #define    ADC_DMA_CHANNEL               DMA1_Channel1
 #define    ADC_DMA_CLK                   RCC_AHBPeriph_DMA1
 
+typedef struct
+{
+    __IO uint16_t ADC_ConvertedValue[NOFCHANEL];
+    __IO float ADC_ConvertedValueLocal[NOFCHANEL];
+    void (*get_adc)(void);
 
-extern __IO uint16_t ADC_ConvertedValue[NOFCHANEL];
-extern __IO float ADC_ConvertedValueLocal[NOFCHANEL]; 
-extern __IO uint8_t Attitude_Alarm;        
+} Drv_ADC_t, *Drv_ADC_pt;
 
-void ADCx_Init(void);
-void GET_ADC(void);
+extern Drv_ADC_pt drv_adc_pt;
+
+void init_adc(void);
+
 #endif /* __BSP_ADC_H */
 
 

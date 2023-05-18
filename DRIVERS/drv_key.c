@@ -2,6 +2,8 @@
 #include "Common.h"
 #include "os_system__typedef.h"
 #include "drv_opt.h"
+#include "drv_voice.h"
+
 static uint8_t get_key1_state(void)
 {
     // u8 status;
@@ -27,7 +29,6 @@ static void key_gpio_init(void)
     GPIO_Init(GPIOB, &GPIO_InitStructure);
 
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOB, &GPIO_InitStructure);
 }
@@ -61,7 +62,8 @@ void key_handle(KEY_NAME key_name, KEY_EVENT key_event)
         }
         else if (key_name == KEY_S1)
         {
-            u8 tag = 2;
+            drv_voice_pt->yyhy();
+            
         }
 
         break;

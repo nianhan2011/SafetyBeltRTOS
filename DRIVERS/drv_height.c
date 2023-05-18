@@ -53,24 +53,17 @@ void set_height_zero(void)
     // if (isOpen) {
     while ((drv_height_pt->height > 1.0) || (drv_height_pt->height < -1.0))
     {
-//        taskENTER_CRITICAL();
-
-         USART_printf(UART5, cmd1);
-//        timtick->delay(10);
-	    vTaskDelay(100);
+        USART_printf(UART5, cmd1);
+        //        timtick->delay(10);
+        vTaskDelay(100);
         usart5_send_array(cmd2, 6);
-//        taskEXIT_CRITICAL();
+        //        taskEXIT_CRITICAL();
 
         vTaskDelay(100);
     }
 
     vTaskDelete(NULL);
 
-    // USART_printf(UART5, cmd1);
-    // vTaskDelay(100);
-    // usart5_send_array(cmd2, 6);
-
-    // }
 }
 
 void init_drv_height(void)
