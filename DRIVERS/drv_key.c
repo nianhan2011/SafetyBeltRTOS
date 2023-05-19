@@ -62,7 +62,6 @@ void key_handle(KEY_NAME key_name, KEY_EVENT key_event)
         }
         else if (key_name == KEY_S1)
         {
-            drv_voice_pt->yyhy();
             
         }
 

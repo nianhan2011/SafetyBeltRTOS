@@ -176,10 +176,151 @@ void yyhy(void)
     vTaskDelay(100);
 }
 
+void height_zero_finish(void) 
+{
+    USART4_send_array(vol, sizeof(vol));
+    // yy_val = 30;
+    vTaskDelay(100);
+    USART4_send_array(mode_single_stop, sizeof(mode_single_stop));
+    vTaskDelay(100);
+    USART4_send_array(set_04, sizeof(set_04));
+    vTaskDelay(100);
+}
+
+void net_success(void) // 03： 网络连接成功语音
+{
+    USART4_send_array(vol, sizeof(vol));
+    // yy_val = 30;
+    vTaskDelay(100);
+    USART4_send_array(mode_single_stop, sizeof(mode_single_stop));
+    vTaskDelay(100);
+    USART4_send_array(set_03, sizeof(set_03));
+    vTaskDelay(100);
+}
+
+void yy_close(void) // 05： 关机语音
+{
+    USART4_send_array(vol, sizeof(vol));
+    // yy_val = 30;
+    vTaskDelay(100);
+    USART4_send_array(mode_single_stop, sizeof(mode_single_stop));
+    vTaskDelay(100);
+    USART4_send_array(set_05, sizeof(set_05));
+    vTaskDelay(100);
+}
+
+void pose_warn(void) // 01： 姿态报警语音
+{
+    USART4_send_array(vol, sizeof(vol));
+    // yy_val = 10;
+    vTaskDelay(100);
+    USART4_send_array(mode_single_tune_circulation, sizeof(mode_single_tune_circulation));
+    vTaskDelay(100);
+    USART4_send_array(set_01, sizeof(set_01));
+    vTaskDelay(100);
+}
+
+void low_battery(void) // 09 低电量报警
+{
+    USART4_send_array(vol, sizeof(vol));
+    // yy_val = 10;
+    vTaskDelay(100);
+    USART4_send_array(mode_single_tune_circulation, sizeof(mode_single_tune_circulation));
+    vTaskDelay(100);
+    USART4_send_array(set_09, sizeof(set_09));
+    vTaskDelay(100);
+}
+
+void unlock_finish(void) // 11 设备已解锁语音
+{
+    USART4_send_array(vol, sizeof(vol));
+    // yy_val = 30;
+    vTaskDelay(100);
+    USART4_send_array(mode_single_stop, sizeof(mode_single_stop));
+    vTaskDelay(100);
+    USART4_send_array(set_11, sizeof(set_11));
+    vTaskDelay(100);
+}
+
+/************新增3个语音模块*****************/
+void lock_request(void) // 06 请求上锁语音
+{
+    USART4_send_array(vol, sizeof(vol));
+    // yy_val = 10;
+    vTaskDelay(100);
+    USART4_send_array(mode_single_stop, sizeof(mode_single_stop));
+    vTaskDelay(100);
+    USART4_send_array(set_06, sizeof(set_06));
+    vTaskDelay(100);
+}
+
+void unlock_request(void) // 07 请求解锁语音
+{
+    USART4_send_array(vol, sizeof(vol));
+    // yy_val = 10;
+    vTaskDelay(100);
+    USART4_send_array(mode_single_stop, sizeof(mode_single_stop));
+    vTaskDelay(100);
+    USART4_send_array(set_07, sizeof(set_07));
+    vTaskDelay(100);
+}
+
+void sos(void) // 08 紧急求救语音
+{
+    USART4_send_array(vol, sizeof(vol));
+    // yy_val = 10;
+    vTaskDelay(100);
+    USART4_send_array(mode_single_stop, sizeof(mode_single_stop));
+    vTaskDelay(100);
+    USART4_send_array(set_08, sizeof(set_08));
+    vTaskDelay(100);
+}
+
+void danger_height(void) // 12 危险高度语音
+{
+    USART4_send_array(vol, sizeof(vol));
+    // yy_val = 10;
+    vTaskDelay(100);
+    USART4_send_array(mode_single_stop, sizeof(mode_single_stop));
+    vTaskDelay(100);
+    USART4_send_array(set_12, sizeof(set_12));
+    vTaskDelay(100);
+}
+void fatigue(void) // 13 疲劳语音
+{
+    USART4_send_array(vol, sizeof(vol));
+    // yy_val = 10;
+    vTaskDelay(100);
+    USART4_send_array(mode_single_tune_circulation, sizeof(mode_single_tune_circulation));
+    vTaskDelay(100);
+    USART4_send_array(set_13, sizeof(set_13));
+    vTaskDelay(100);
+}
+void open_hooking(void) // 14 打开挂钩
+{
+    USART4_send_array(vol, sizeof(vol));
+    // yy_val = 10;
+    vTaskDelay(100);
+    USART4_send_array(mode_single_tune_circulation, sizeof(mode_single_tune_circulation));
+    vTaskDelay(100);
+    USART4_send_array(set_14, sizeof(set_14));
+    vTaskDelay(100);
+}
 void init_voice(void) 
 {
     drv_voice_pt = &drv_voice_t;
     drv_voice_pt->yyhy = yyhy;
+    drv_voice_pt->height_zero_finish = height_zero_finish;
+    drv_voice_pt->net_success = net_success;
+    drv_voice_pt->yy_close = yy_close;
+    drv_voice_pt->pose_warn = pose_warn;
+    drv_voice_pt->low_battery = low_battery;
+    drv_voice_pt->unlock_finish = unlock_finish;
+    drv_voice_pt->lock_request = lock_request;
+    drv_voice_pt->unlock_request = unlock_request;
+    drv_voice_pt->sos = sos;
+    drv_voice_pt->danger_height = danger_height;
+    drv_voice_pt->open_hooking = open_hooking;
 
     USART4_Init();
 }

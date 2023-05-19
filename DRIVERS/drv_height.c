@@ -4,7 +4,7 @@
 #include "string.h"
 #include "stdlib.h"
 #include "Common.h"
-
+#include "drv_voice.h"
 u8 cmd1[30] = "https://www.wit-motion.cn/\n";
 u8 cmd2[20] = {0xFF, 0xAA, 0x0d, 0x03, 0x00, 0x0a};
 static Drv_Height_t drv_height_t;
@@ -62,18 +62,20 @@ void set_height_zero(void)
         vTaskDelay(100);
     }
 
+    drv_voice_pt->height_zero_finish();
+
     vTaskDelete(NULL);
 
 }
 
 void init_drv_height(void)
 {
-    USART5_Init();
-
     drv_height_pt = &drv_height_t;
     drv_height_pt->lock = thread_cslock_init("drv_height");
-    memset(drv_height_pt->buff, 0, 20);
+    memset(drv_height_pt->buff, 0, 40);
     drv_height_pt->buff_length = 0;
     drv_height_pt->set_height_zero = set_height_zero;
     drv_height_pt->get_barometric = get_barometric;
+
+    USART5_Init();
 }

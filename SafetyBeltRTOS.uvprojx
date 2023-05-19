@@ -10,13 +10,13 @@
       <TargetName>SafetyBeltRTOS</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>5060528::V5.06 update 5 (build 528)::ARMCC</pCCUsed>
+      <pCCUsed>5060960::V5.06 update 7 (build 960)::.\Compailer</pCCUsed>
       <uAC6>0</uAC6>
       <TargetOption>
         <TargetCommonOption>
           <Device>STM32F103RC</Device>
           <Vendor>STMicroelectronics</Vendor>
-          <PackID>Keil.STM32F1xx_DFP.2.2.0</PackID>
+          <PackID>Keil.STM32F1xx_DFP.2.3.0</PackID>
           <PackURL>http://www.keil.com/pack/</PackURL>
           <Cpu>IRAM(0x20000000,0xC000) IROM(0x08000000,0x40000) CPUTYPE("Cortex-M3") CLOCK(12000000) ELITTLE</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
@@ -184,10 +184,13 @@
             <hadXRAM>0</hadXRAM>
             <uocXRam>0</uocXRam>
             <RvdsVP>0</RvdsVP>
+            <RvdsMve>0</RvdsMve>
+            <RvdsCdeCp>0</RvdsCdeCp>
+            <nBranchProt>0</nBranchProt>
             <hadIRAM2>0</hadIRAM2>
             <hadIROM2>0</hadIROM2>
             <StupSel>8</StupSel>
-            <useUlib>0</useUlib>
+            <useUlib>1</useUlib>
             <EndSel>0</EndSel>
             <uLtcg>0</uLtcg>
             <nSecure>0</nSecure>
@@ -324,6 +327,7 @@
             <uThumb>0</uThumb>
             <uSurpInc>0</uSurpInc>
             <uC99>1</uC99>
+            <uGnu>0</uGnu>
             <useXO>0</useXO>
             <v6Lang>1</v6Lang>
             <v6LangP>1</v6LangP>
@@ -336,7 +340,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F10X_HD,USE_STDPERIPH_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>.\CORE;.\STM32F10x_FWLib\inc;.\SYSTEM\delay;.\SYSTEM\sys;.\SYSTEM\usart;.\USER;.\SYSTEM\TIMER;.\STM32F10x_FWLib\src;.\SYSTEM\Common;.\SYSTEM\os_system;.\SYSTEM\queue;.\FreeRTOS\include;.\FreeRTOS\port\RVDS\ARM_CM3;.\DRIVERS\port;.\DRIVERS</IncludePath>
+              <IncludePath>.\CORE;.\STM32F10x_FWLib\inc;.\SYSTEM\delay;.\SYSTEM\sys;.\USER;.\SYSTEM\TIMER;.\STM32F10x_FWLib\src;.\SYSTEM\Common;.\SYSTEM\os_system;.\SYSTEM\queue;.\FreeRTOS\include;.\FreeRTOS\port\RVDS\ARM_CM3;.\DRIVERS\port;.\DRIVERS</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -349,7 +353,7 @@
             <NoWarn>0</NoWarn>
             <uSurpInc>0</uSurpInc>
             <useXO>0</useXO>
-            <uClangAs>0</uClangAs>
+            <ClangAsOpt>4</ClangAsOpt>
             <VariousControls>
               <MiscControls></MiscControls>
               <Define></Define>
@@ -419,16 +423,6 @@
               <FileName>delay.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\SYSTEM\delay\delay.h</FilePath>
-            </File>
-            <File>
-              <FileName>usart.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\SYSTEM\usart\usart.c</FilePath>
-            </File>
-            <File>
-              <FileName>usart.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\SYSTEM\usart\usart.h</FilePath>
             </File>
             <File>
               <FileName>timer.c</FileName>
@@ -935,6 +929,26 @@
               <FileType>5</FileType>
               <FilePath>.\DRIVERS\drv_voice.h</FilePath>
             </File>
+            <File>
+              <FileName>drv_gps.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\DRIVERS\drv_gps.c</FilePath>
+            </File>
+            <File>
+              <FileName>drv_gps.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\DRIVERS\drv_gps.h</FilePath>
+            </File>
+            <File>
+              <FileName>drv_me.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\DRIVERS\drv_me.c</FilePath>
+            </File>
+            <File>
+              <FileName>drv_me.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\DRIVERS\drv_me.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -964,5 +978,14 @@
     <components/>
     <files/>
   </RTE>
+
+  <LayerInfo>
+    <Layers>
+      <Layer>
+        <LayName>SafetyBeltRTOS</LayName>
+        <LayPrjMark>1</LayPrjMark>
+      </Layer>
+    </Layers>
+  </LayerInfo>
 
 </Project>
