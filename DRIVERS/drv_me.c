@@ -1,15 +1,14 @@
 #include "drv_me.h"
-#include "common.h"
 #include <stdio.h>
 #include <string.h>
-#include <stdbool.h>
-#include "os_system__typedef.h"
+#include "drv_voice.h"
+
 static void USART_GPIO_Config(void);
 static void USART_USART_Config(void);
 static void USART_4G_NVIC_Configuration(void);
+static void clearFrame(void);
 
 USART_4G_Fram USART_4G_Fram_Instance = {0};
-_Bool TCP_Is_Connect = false;
 /**
  * @brief  初始化函数
  * @param  无
@@ -104,8 +103,11 @@ void USART_4G_IRQnHandler(void)
 	{
 		ucCh = USART_ReceiveData(USART_4G);
 
-		if (USART_4G_Fram_Instance.InfBit.FramLength < (RX2_4G_BUF_MAX_LEN - 2)) // 预留1个字节写结束符
-			USART_4G_Fram_Instance.Data_RX_BUF[USART_4G_Fram_Instance.InfBit.FramLength++] = ucCh;
+		if (USART_4G_Fram_Instance.InfBit.FramLength >= (RX2_4G_BUF_MAX_LEN - 2))
+		{
+			USART_4G_Fram_Instance.InfBit.FramLength = 0;
+		} // 预留1个字节写结束符
+		USART_4G_Fram_Instance.Data_RX_BUF[USART_4G_Fram_Instance.InfBit.FramLength++] = ucCh;
 	}
 
 	if (USART_GetITStatus(USART_4G, USART_IT_IDLE) == SET) // 数据帧接收完毕
@@ -126,78 +128,29 @@ void USART_4G_IRQnHandler(void)
  *         0，指令发送失败
  * 调用  ：被外部调用
  */
-bool ME_Cmd(char *cmd, char *reply2, u32 waittime)
+bool ME_Cmd(char *cmd, char *reply, u32 waittime, u8 isClearFrame)
 {
 	bool isVerify;
-	char *resultCMD = cmd;
-	char *resultRP = reply2;
-	USART_4G_Fram_Instance.InfBit.FramLength = 0; // 从新开始接收新的数据包
-	USART_4G_Fram_Instance.InfBit.FramFinishFlag = 0;
-	memset((char *)USART_4G_Fram_Instance.Data_RX_BUF, 0, RX2_4G_BUF_MAX_LEN);
-	//	USART_4G_Fram_Instance.Data_RX_BUF [USART_4G_Fram_Instance.InfBit.FramLength ]  = '\0';
 
-	WIFI_Usart("%s\r\n", resultCMD);
+	WIFI_Usart("%s\r\n", cmd);
 
 	vTaskDelay(waittime); // 延时
 
-	//	char red[200];
-	//	strcpy(red, USART_4G_Fram_Instance.Data_RX_BUF);
-	// 清除接收标志
-	//	if ( ( replay7 != 0 ) && ( reply2 != 0 ) )
-	//		isVerify = ( ( bool ) strstr ( USART_4G_Fram_Instance.Data_RX_BUF, replay7 ) ||
-	//						 ( bool ) strstr ( USART_4G_Fram_Instance.Data_RX_BUF, reply2 ) );
-	//
-	//	else if ( replay7 != 0 )
-	//		isVerify = ( ( bool ) strstr ( USART_4G_Fram_Instance.Data_RX_BUF, replay7 ) );
-	//
-	//	else
-	if (resultRP == 0)
+	if (reply == 0)
 	{
 		isVerify = true;
 	}
 	else
 	{
-		isVerify = ((bool)strstr((char *)USART_4G_Fram_Instance.Data_RX_BUF, resultRP));
+		isVerify = ((bool)strstr((char *)USART_4G_Fram_Instance.Data_RX_BUF, reply));
 
 	} // 不需要接收数据
 
-	//	USART_4G_Fram_Instance.InfBit.FramLength = 0;               //从新开始接收新的数据包
-	//	USART_4G_Fram_Instance.InfBit.FramFinishFlag = 0;
-	////	USART_4G_Fram_Instance.Data_RX_BUF [USART_4G_Fram_Instance.InfBit.FramLength ]  = '\0';
-	//	memset(USART_4G_Fram_Instance.Data_RX_BUF, 0, RX2_4G_BUF_MAX_LEN);
-	//
-	return isVerify;
-}
-
-bool ME_CmdWithTemp(char *cmd, char *reply1, char *reply2, u32 waittime, char *tempReceive)
-{
-	bool isVerify;
-	USART_4G_Fram_Instance.InfBit.FramLength = 0; // 从新开始接收新的数据包
-	USART_4G_Fram_Instance.InfBit.FramFinishFlag = 0;
-	memset((char *)USART_4G_Fram_Instance.Data_RX_BUF, 0, strlen((char *)USART_4G_Fram_Instance.Data_RX_BUF));
-
-	WIFI_Usart("%s\r\n", cmd);
-
-	if ((reply1 == 0) && (reply2 == 0)) // 不需要接收数据
-		return true;
-
-	vTaskDelay(waittime); // 延时
-
-	if ((reply1 != 0) && (reply2 != 0))
-		isVerify = ((bool)strstr((char *)USART_4G_Fram_Instance.Data_RX_BUF, reply1) ||
-					(bool)strstr((char *)USART_4G_Fram_Instance.Data_RX_BUF, reply2));
-
-	else if (reply1 != 0)
-		isVerify = ((bool)strstr((char *)USART_4G_Fram_Instance.Data_RX_BUF, reply1));
-
-	else
-		isVerify = ((bool)strstr((char *)USART_4G_Fram_Instance.Data_RX_BUF, reply2));
-
-	memcpy(tempReceive, (char *)USART_4G_Fram_Instance.Data_RX_BUF, strlen((char *)USART_4G_Fram_Instance.Data_RX_BUF));
-	//	tempReceive = strEsp8266_Fram_Record.Data_RX_BUF;
-	USART_4G_Fram_Instance.InfBit.FramLength = 0; // 从新开始接收新的数据包
-	USART_4G_Fram_Instance.InfBit.FramFinishFlag = 0;
-	memset((char *)USART_4G_Fram_Instance.Data_RX_BUF, 0, strlen((char *)USART_4G_Fram_Instance.Data_RX_BUF));
+	if (isClearFrame)
+	{
+		clearFrame();
+	}
+	// memset(USART_4G_Fram_Instance.Data_RX_BUF, 0, RX2_4G_BUF_MAX_LEN);
 
 	return isVerify;
 }
@@ -206,9 +159,18 @@ bool ME_GetIMEI()
 {
 	char cCmd[20];
 
-	sprintf(cCmd, "AT+CGSN=1");
-	if (ME_Cmd(cCmd, "OK", 500))
+	sprintf(cCmd, "AT+CGSN");
+	if (ME_Cmd(cCmd, "OK", 500, false))
 	{
+		for (u8 i = 0, j = 0; i < strlen(USART_4G_Fram_Instance.Data_RX_BUF); i++)
+		{
+			/* code */
+			if (USART_4G_Fram_Instance.Data_RX_BUF[i] >= '0' && USART_4G_Fram_Instance.Data_RX_BUF[i] <= '9')
+			{
+				drv_me_pt->imei_id[j++] = USART_4G_Fram_Instance.Data_RX_BUF[i];
+			}
+		}
+		clearFrame();
 		return true;
 	}
 	else
@@ -222,7 +184,7 @@ bool ME_RSSI()
 	char cCmd[20];
 
 	sprintf(cCmd, "AT+CSQ");
-	if (ME_Cmd(cCmd, "OK", 500))
+	if (ME_Cmd(cCmd, "OK", 500, true))
 	{
 		return true;
 	}
@@ -237,7 +199,7 @@ bool ME_115200()
 	char cCmd[20];
 
 	sprintf(cCmd, "AT+IPR=115200");
-	if (ME_Cmd(cCmd, NULL, 500))
+	if (ME_Cmd(cCmd, NULL, 500, true))
 	{
 		return true;
 	}
@@ -251,7 +213,7 @@ bool ME_CPIN()
 	char cCmd[20];
 
 	sprintf(cCmd, "AT+CPIN?");
-	if (ME_Cmd(cCmd, "READY", 500))
+	if (ME_Cmd(cCmd, "READY", 500, true))
 	{
 		return true;
 	}
@@ -266,7 +228,7 @@ bool ME_CEREG()
 	char cCmd[20];
 
 	sprintf(cCmd, "AT+CEREG?");
-	if (ME_Cmd(cCmd, "CEREG: 0,1", 500))
+	if (ME_Cmd(cCmd, "CEREG: 0,1", 500, true))
 	{
 		return true;
 	}
@@ -281,7 +243,7 @@ bool Open_Call()
 	char cCmd[50];
 
 	sprintf(cCmd, "AT+ZIPCALL=1");
-	if (ME_Cmd(cCmd, "+ZIPCALL:", 500))
+	if (ME_Cmd(cCmd, "+ZIPCALL:", 500, true))
 	{
 		return true;
 	}
@@ -296,7 +258,7 @@ bool Close_Call()
 	char cCmd[50];
 
 	sprintf(cCmd, "AT+ZIPCLOSE=1");
-	if (ME_Cmd(cCmd, "+OK:", 500))
+	if (ME_Cmd(cCmd, "+OK:", 500, true))
 	{
 		return true;
 	}
@@ -311,7 +273,7 @@ bool TCP_Connect()
 	char cCmd[50];
 
 	sprintf(cCmd, "AT+ZIPOPEN=1,0,115.236.153.174,25773");
-	if (ME_Cmd(cCmd, "+ZIPSTAT: 1,1", 500))
+	if (ME_Cmd(cCmd, "+ZIPSTAT: 1,1", 500, true))
 	{
 		return true;
 	}
@@ -326,7 +288,7 @@ bool TCP_Keep_ALive()
 	char cCmd[50];
 
 	sprintf(cCmd, "AT+ZIPALIVE=1,1,300,75,9");
-	if (ME_Cmd(cCmd, "OK", 500))
+	if (ME_Cmd(cCmd, "OK", 500, true))
 	{
 		return true;
 	}
@@ -335,90 +297,171 @@ bool TCP_Keep_ALive()
 		return false;
 	}
 }
-void TCP_Send(char *message)
-{
-	char cCmd[50];
-
-	sprintf(cCmd, "AT+ZIPSEND=1,%s", message);
-	if (ME_Cmd(cCmd, NULL, 200))
-	{
-	}
-	else
-	{
-		//		TCP_Is_Connect = false;
-		//		Close_Call();
-		//		Start_4G_TCP();
-
-		//		TCP_Send(message);
-	}
-}
 
 void clearFrame(void)
 {
+	// thread_cslock_lock(drv_me_pt->lock, MaxTick);
+
+	// USART_4G_Fram_Instance.InfBit.FramLength = 0; // 从新开始接收新的数据包
+	// USART_4G_Fram_Instance.InfBit.FramFinishFlag = 0;
+	// USART_4G_Fram_Instance.Data_RX_BUF[USART_4G_Fram_Instance.InfBit.FramLength] = '\0';
+	taskENTER_CRITICAL(); // 进入临界区
+
 	USART_4G_Fram_Instance.InfBit.FramLength = 0;
 	USART_4G_Fram_Instance.InfBit.FramFinishFlag = 0;
 	memset((char *)USART_4G_Fram_Instance.Data_RX_BUF, 0, strlen((char *)USART_4G_Fram_Instance.Data_RX_BUF));
+	// thread_cslock_free(drv_me_pt->lock);
+	taskEXIT_CRITICAL(); // 退出临界区
 }
 
 static __IO uint32_t timeout = 50;
 
-void Start_4G_TCP(void)
+void start_me()
 {
 
-	//	while (!ME_RSSI());
-
-	while (!ME_115200());
-	// while (!ME_GetIMEI());
-			
-
-	while (!ME_CPIN())
-			;
-	while (!ME_CEREG())
-		;
-	while (!Open_Call())
-		;
-	while (!TCP_Connect())
-		;
-	// while (!TCP_Keep_ALive())
-		;
-
-	TCP_Is_Connect = true;
-}
-void Start_ME()
-{
-
+restart:
+	drv_voice_pt->yyhy();
 	GPIO_SetBits(GPIOC, GPIO_Pin_9);
 	vTaskDelay(200);
 	GPIO_ResetBits(GPIOC, GPIO_Pin_9);
 	vTaskDelay(1000);
 
-	Start_4G_TCP();
+	timeout = 50;
+	while (!ME_115200())
+	{
+		if ((timeout--) == 0)
+			goto restart;
+	};
+
+	timeout = 50;
+	while (!ME_GetIMEI())
+	{
+		if ((timeout--) == 0)
+			goto restart;
+	}
+
+	timeout = 50;
+	while (!ME_CPIN())
+	{
+		if ((timeout--) == 0)
+			goto restart;
+	};
+
+	timeout = 50;
+	while (!ME_RSSI())
+	{
+		if ((timeout--) == 0)
+			goto restart;
+	}
+
+	timeout = 50;
+
+	while (!ME_CEREG())
+	{
+		if ((timeout--) == 0)
+			goto restart;
+	};
+	timeout = 50;
+
+	while (!Open_Call())
+	{
+		if ((timeout--) == 0)
+			goto restart;
+	};
+	timeout = 50;
+
+	while (!TCP_Connect())
+	{
+		if ((timeout--) == 0)
+			goto restart;
+	};
+	timeout = 50;
+	while (!TCP_Keep_ALive())
+	{
+		if ((timeout--) == 0)
+			goto restart;
+	}
+
+	drv_me_pt->tcp_connection_status = true;
+	drv_voice_pt->net_success();
 }
 
-void ReceiveString(void)
+char send_cmd[50];
+
+void send_me(void)
 {
 
-	Start_ME();
 	while (1)
 	{
-		char pRecStr[100] = {0};
-		if (USART_4G_Fram_Instance.InfBit.FramFinishFlag == 0)
-		{
-			return;
-		}
+		/* code */
 
-		strcpy(pRecStr, (char *)USART_4G_Fram_Instance.Data_RX_BUF);
-
-		if (strstr(pRecStr, "S44"))
+		if (drv_me_pt->tcp_connection_status == true)
 		{
-
-			PAout(1) = 1;
-			clearFrame();
-		}
-		else if (strstr(pRecStr, "S33"))
-		{
-			PAout(1) = 0;
-			clearFrame();
+			sprintf(send_cmd, "AT+ZIPSEND=1,%s", "48656C6C6F21");
+			WIFI_Usart("%s\r\n", send_cmd);
+			vTaskDelay(500);
 		}
 	}
+}
+
+void receive_me(void)
+{
+
+	char pRecStr[100] = {0};
+
+	strcpy(pRecStr, (char *)USART_4G_Fram_Instance.Data_RX_BUF);
+
+	if (strstr(pRecStr, "ERROR"))
+	{
+		drv_me_pt->tcp_connection_status = false;
+		clearFrame();
+	}
+	if (strstr(pRecStr, "S44"))
+	{
+
+		drv_voice_pt->unlock_finish();
+		clearFrame();
+	}
+	if (strstr(pRecStr, "S33"))
+	{
+		drv_voice_pt->open_hooking();
+		clearFrame();
+	}
+
+	if (strstr(pRecStr, "+ZIPSEND"))
+	{
+		clearFrame();
+	}
+}
+
+void me_proc(void)
+{
+	while (1)
+	{
+		/* code */
+
+		if (drv_me_pt->tcp_connection_status != true)
+		{
+			start_me();
+		}
+		else
+		{
+			receive_me();
+		}
+	}
+}
+static Drv_Me_t drv_me_t = {
+	.tcp_connection_status = 0,
+	.me_proc = me_proc,
+	.send_me = send_me,
+	.imei_id = {0},
+};
+Drv_Me_pt drv_me_pt;
+
+void init_me(void)
+{
+	drv_me_pt = &drv_me_t;
+	drv_me_pt->lock = thread_cslock_init("drv_me"),
+
+	USART_4G_Init();
 }

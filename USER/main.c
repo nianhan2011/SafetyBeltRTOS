@@ -33,7 +33,7 @@ void main_task(void)
     init_drv_height();
     init_voice();
     init_gps();
-    USART_4G_Init();
+    init_me();
 
     vTaskDelay(500);
 
@@ -43,7 +43,8 @@ void main_task(void)
     thread_create(key_proc, "key_proc", 1024, NULL, 2, NULL);
     thread_create(drv_height_pt->get_barometric, "get_barometric", 1024, NULL, 2, NULL);
     thread_create(drv_gps_pt->get_gps, "get_gps", 1024, NULL, 2, NULL);
-    thread_create(ReceiveString, "ReceiveString", 1024, NULL, 2, NULL);
+    thread_create(drv_me_pt->me_proc, "me_proc", 1024, NULL, 2, NULL);
+    thread_create(drv_me_pt->send_me, "send_me", 128, NULL, 2, NULL);
 
     // thread_create(drv_adc_pt->get_adc, "get_adc", 1024, NULL, 2, NULL);
 

@@ -5,7 +5,7 @@
 #include "common.h"
 #include <stdio.h>
 #include <stdbool.h>
-
+#include "os_system__typedef.h"
 #if defined(__CC_ARM)
 #pragma anon_unions
 #endif
@@ -45,28 +45,17 @@ typedef struct // ��������֡�Ĵ����ṹ��
 
 } USART_4G_Fram;
 
-// typedef struct                                   //��������֡�Ĵ����ṹ��
-//{
-//	int Pressure_Data;
-//
-//    	int Height_Data;
+typedef struct
+{
+	__IO u8 tcp_connection_status;
+	thread_cslock_t lock;
 
-//
-//} Struct_Barometric_Data;
+	u8 imei_id[20];
+	void (*me_proc)(void);
+	void (*send_me)(void);
 
-extern USART_4G_Fram USART_4G_Fram_Instance;
-extern _Bool TCP_Is_Connect;
-void USART_4G_Init(void);
+} Drv_Me_t, *Drv_Me_pt;
 
-void Start_4G_TCP(void);
-
-bool ME_GetIMEI(void);
-
-bool GPRS_Connect(void);
-bool Open_Call(void);
-
-bool TCP_Connect(void);
-void TCP_Send(char *message);
-void Start_ME(void);
-void ReceiveString(void);
+extern Drv_Me_pt drv_me_pt;
+void init_me(void);
 #endif
