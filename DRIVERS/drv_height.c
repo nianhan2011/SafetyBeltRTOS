@@ -32,9 +32,8 @@ void get_barometric(void)
                     {
                         orign_height = atof(temp + 9);
                         thread_cslock_lock(drv_height_pt->lock, MaxTick);
-                        drv_height_pt->height = orign_height * 10;
-                        thread_cslock_free(drv_height_pt->lock);
-                    }
+                        drv_height_pt->height = (u32)(orign_height * 10);
+                     }
 
                     drv_height_pt->buff_length = 0;
                 }

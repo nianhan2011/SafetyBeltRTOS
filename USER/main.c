@@ -39,12 +39,12 @@ void main_task(void)
 
     taskENTER_CRITICAL(); // 进入临界区
 
-    thread_create(turn_led, "turn_led", 128, NULL, 2, NULL);
-    thread_create(key_proc, "key_proc", 1024, NULL, 2, NULL);
-    thread_create(drv_height_pt->get_barometric, "get_barometric", 1024, NULL, 2, NULL);
-    thread_create(drv_gps_pt->get_gps, "get_gps", 1024, NULL, 2, NULL);
-    thread_create(drv_me_pt->me_proc, "me_proc", 1024, NULL, 2, NULL);
-    thread_create(drv_me_pt->send_me, "send_me", 128, NULL, 2, NULL);
+    thread_create(turn_led, "turn_led", 32, NULL, 2, NULL);
+    thread_create(key_proc, "key_proc", 164, NULL, 2, NULL);
+    thread_create(drv_height_pt->get_barometric, "get_barometric", 128, NULL, 2, NULL);
+    thread_create(drv_gps_pt->get_gps, "get_gps", 128, NULL, 2, NULL);
+    thread_create(drv_me_pt->me_proc, "me_proc", 128, NULL, 2, NULL);
+    thread_create(drv_me_pt->me3630_send, "me3630_send", 128, NULL, 2, NULL);
 
     // thread_create(drv_adc_pt->get_adc, "get_adc", 1024, NULL, 2, NULL);
 

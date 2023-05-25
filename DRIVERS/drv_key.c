@@ -3,7 +3,7 @@
 #include "os_system__typedef.h"
 #include "drv_opt.h"
 #include "drv_voice.h"
-
+#include "drv_me.h"
 static uint8_t get_key1_state(void)
 {
     // u8 status;
@@ -59,10 +59,18 @@ void key_handle(KEY_NAME key_name, KEY_EVENT key_event)
     case KEY_CLICK:
         if (key_name == KEY_K1)
         {
+            if (drv_me_pt->tcp_connection_status == 1)
+            {
+                thread_cslock_lock(drv_me_pt->lock, MaxTick);
+
+                char mytaskstatebuffer[500];
+                vTaskList((char *)&mytaskstatebuffer);
+                WIFI_Usart("AT+ZIPSEND=1,%s\r\n",mytaskstatebuffer);
+                thread_cslock_free(drv_me_pt->lock);
+            }
         }
         else if (key_name == KEY_S1)
         {
-            
         }
 
         break;

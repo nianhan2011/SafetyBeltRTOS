@@ -2,9 +2,10 @@
 #define __DRV_VOICE_H
 
 #include "stm32f10x.h"
-
+#include "os_system__typedef.h"
 typedef struct
 {
+    thread_cslock_t lock;
     void (*yyhy)(void);
     void (*height_zero_finish)(void);
     void (*net_success)(void);

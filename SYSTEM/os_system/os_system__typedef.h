@@ -111,7 +111,7 @@ typedef unsigned int time_t;
 #define thread_create(func,name,stack_size,argc,priority,tcb)	\
 	xTaskCreate((TaskFunction_t )func, 				 	\
                         (const char*    )name, 	\
-                        (uint16_t       )stack_size/4,  			\
+                        (uint16_t       )stack_size,  			\
                         (void*          )argc,			\
                         (UBaseType_t    )priority,	    		\
                         (TaskHandle_t*  )tcb);

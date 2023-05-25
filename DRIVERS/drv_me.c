@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "drv_voice.h"
+#include "drv_gps.h"
+#include "drv_opt.h"
 
 static void USART_GPIO_Config(void);
 static void USART_USART_Config(void);
@@ -257,7 +259,7 @@ bool Close_Call()
 {
 	char cCmd[50];
 
-	sprintf(cCmd, "AT+ZIPCLOSE=1");
+	sprintf(cCmd, "AT+ZIPCALL=0");
 	if (ME_Cmd(cCmd, "+OK:", 500, true))
 	{
 		return true;
@@ -298,6 +300,20 @@ bool TCP_Keep_ALive()
 	}
 }
 
+bool transmission_mode()
+{
+	char cCmd[50];
+
+	sprintf(cCmd, "AT+ZIPCREATE=1");
+	if (ME_Cmd(cCmd, NULL, 500, true))
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
 void clearFrame(void)
 {
 	// thread_cslock_lock(drv_me_pt->lock, MaxTick);
@@ -320,6 +336,7 @@ void start_me()
 {
 
 restart:
+
 	drv_voice_pt->yyhy();
 	GPIO_SetBits(GPIOC, GPIO_Pin_9);
 	vTaskDelay(200);
@@ -382,29 +399,81 @@ restart:
 			goto restart;
 	}
 
+	timeout = 50;
+	while (!transmission_mode())
+	{
+		if ((timeout--) == 0)
+			goto restart;
+	}
+
 	drv_me_pt->tcp_connection_status = true;
 	drv_voice_pt->net_success();
 }
 
-char send_cmd[50];
+static void pre_send_data(void)
+{
+	memset(drv_me_pt->send_data,0,1024);
 
-void send_me(void)
+	strcat(drv_me_pt->send_data, drv_me_pt->imei_id);//imei
+	strcat(drv_me_pt->send_data, " ");
+
+	strcat(drv_me_pt->send_data, "101.1");//气压
+	strcat(drv_me_pt->send_data, " ");
+
+	strcat(drv_me_pt->send_data, "O2");//设备状态
+	strcat(drv_me_pt->send_data, " ");
+
+	strcat(drv_me_pt->send_data, "100");//电量
+	strcat(drv_me_pt->send_data, " ");
+
+	// strcat(drv_me_pt->send_data, "C11"); // 请求上锁/解锁
+	// strcat(drv_me_pt->send_data, " ");
+
+	// strcat(drv_me_pt->send_data, "W11"); // 工人请求/报警/高度
+	// strcat(drv_me_pt->send_data, " ");
+
+    char height_str[10];
+	sprintf(height_str, "T%d",drv_height_pt->height);
+	strcat(drv_me_pt->send_data, height_str); // 工人请求/报警/高度
+	strcat(drv_me_pt->send_data, " ");
+
+	strcat(drv_me_pt->send_data, drv_gps_pt->latitude); // 维度
+	strcat(drv_me_pt->send_data, " ");
+
+	strcat(drv_me_pt->send_data, drv_gps_pt->longitude  ); // 经度
+	strcat(drv_me_pt->send_data, " ");
+}
+
+void me3630_send(void)
 {
 
 	while (1)
 	{
 		/* code */
-
-		if (drv_me_pt->tcp_connection_status == true)
+		switch (drv_me_pt->send_step)
 		{
-			sprintf(send_cmd, "AT+ZIPSEND=1,%s", "48656C6C6F21");
-			WIFI_Usart("%s\r\n", send_cmd);
-			vTaskDelay(500);
+		case ME_SEND_DEFAULT:
+			if (drv_me_pt->tcp_connection_status == true)
+			{
+				pre_send_data();
+				thread_cslock_lock(drv_me_pt->lock, MaxTick);
+
+				WIFI_Usart("%s\r\n", drv_me_pt->send_data);
+				vTaskDelay(50);
+				thread_cslock_free(drv_me_pt->lock);
+			}
+			/* code */
+			break;
+
+		default:
+			break;
 		}
+
+		vTaskDelay(5000);
 	}
 }
 
-void receive_me(void)
+void me3630_receive(void)
 {
 
 	char pRecStr[100] = {0};
@@ -413,8 +482,13 @@ void receive_me(void)
 
 	if (strstr(pRecStr, "ERROR"))
 	{
+		thread_cslock_lock(drv_me_pt->lock, MaxTick);
+		Close_Call();
 		drv_me_pt->tcp_connection_status = false;
+		thread_cslock_free(drv_me_pt->lock);
+
 		clearFrame();
+		// WIFI_Usart("%s\r\n", "AT+");
 	}
 	if (strstr(pRecStr, "S44"))
 	{
@@ -446,15 +520,17 @@ void me_proc(void)
 		}
 		else
 		{
-			receive_me();
+			me3630_receive();
 		}
 	}
 }
 static Drv_Me_t drv_me_t = {
 	.tcp_connection_status = 0,
 	.me_proc = me_proc,
-	.send_me = send_me,
+	.me3630_send = me3630_send,
 	.imei_id = {0},
+	.send_step = ME_SEND_DEFAULT,
+	.send_data = {0},
 };
 Drv_Me_pt drv_me_pt;
 

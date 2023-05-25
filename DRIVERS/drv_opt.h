@@ -29,7 +29,7 @@ typedef struct
 {
     u8 buff[40];
     u8 buff_length;
-    float height;
+    u32 height;
     thread_cslock_t lock;
     void (*get_barometric)(void);
     void (*set_height_zero)(void);

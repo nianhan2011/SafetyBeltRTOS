@@ -321,6 +321,7 @@ void init_voice(void)
     drv_voice_pt->sos = sos;
     drv_voice_pt->danger_height = danger_height;
     drv_voice_pt->open_hooking = open_hooking;
+    drv_voice_pt->lock = thread_cslock_init("drv_voice"),
 
     USART4_Init();
 }

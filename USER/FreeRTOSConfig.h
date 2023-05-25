@@ -227,7 +227,7 @@ extern uint32_t SystemCoreClock;
 // 启用运行时间统计功能
 #define configGENERATE_RUN_TIME_STATS 0
 // 启用可视化跟踪调试
-#define configUSE_TRACE_FACILITY 0
+#define configUSE_TRACE_FACILITY 1
 /* 与宏configUSE_TRACE_FACILITY同时为1时会编译下面3个函数
  * prvWriteNameToBuffer()
  * vTaskList(),
@@ -298,7 +298,7 @@ extern uint32_t SystemCoreClock;
 
 /* 以下为使用Percepio Tracealyzer需要的东西，不需要时将 configUSE_TRACE_FACILITY 定义为 0 */
 #if (configUSE_TRACE_FACILITY == 1)
-#include "trcRecorder.h"
+// #include "trcRecorder.h"
 #define INCLUDE_xTaskGetCurrentTaskHandle 1 // 启用一个可选函数（该函数被 Trace源码使用，默认该值为0 表示不用）
 #endif
 

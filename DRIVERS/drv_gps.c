@@ -6,11 +6,11 @@
 #include "os_system__typedef.h"
 #include "drv_gps.h"
 #include "os_system__typedef.h"
+#include <string.h>
 
 static void USART1_GPIO_Config(void);
 static void USART1_USART_Config(void);
 static void USART1_NVIC_Configuration(void);
-
 
 static QueueHandle_t drv_gps_queue;
 
@@ -22,7 +22,7 @@ static QueueHandle_t drv_gps_queue;
 static void USART1_Init(void)
 {
     //	USART1_GPIO_Config ();
-    drv_gps_queue = xQueueCreate(40, sizeof(u8));
+    drv_gps_queue = xQueueCreate(100, sizeof(u8));
 
     USART1_USART_Config();
 }
@@ -97,7 +97,6 @@ static void USART1_USART_Config(void)
     USART_NVIC_Configuration();
 
     USART_Cmd(USART1, ENABLE);
-
 }
 
 void USART1_IRQHandler(void)
@@ -176,25 +175,57 @@ static void set_gnss()
     }
     str_tmp[10] = itoa(str_tmp[10]);
     str_tmp[11] = itoa(str_tmp[11]);
+
+    /* code */
     USART1_send_array((u8 *)str_tmp, strlen(str_tmp));
 }
 
 void get_gps(void)
 {
-    char *temp;
-    float orign_height;
+    char *temp1;
+    char *temp2;
+
+    char *temp3;
+    char *temp4;
+
     while (1)
     {
 
-        if (xQueueReceive(drv_gps_queue, &drv_gps_pt->buff[drv_gps_pt->buff_length++], portMAX_DELAY) == pdPASS)
+        while (xQueueReceive(drv_gps_queue, &drv_gps_pt->buff[drv_gps_pt->buff_length++], portMAX_DELAY))
         {
-            while (xQueueReceive(drv_gps_queue, &drv_gps_pt->buff[drv_gps_pt->buff_length++], portMAX_DELAY))
+            if (drv_gps_pt->buff[drv_gps_pt->buff_length - 1] == '$')
             {
-                if (drv_gps_pt->buff_length >= 39)
+                drv_gps_pt->buff_length = 0;
+            }
+
+            if (drv_gps_pt->buff[0] == 'G' && drv_gps_pt->buff[4] == 'C')
+            {
+                temp1 = strstr((const char *)drv_gps_pt->buff, "A,");
+                temp2 = strstr((const char *)drv_gps_pt->buff, ",N,");
+
+                temp3 = strstr((const char *)drv_gps_pt->buff, "N,");
+                temp4 = strstr((const char *)drv_gps_pt->buff, ",E,");
+                if (temp1 && temp2)
                 {
-  
+                    strncpy(drv_gps_pt->latitude, temp1, temp2 - temp1 + 2);
+
+                    // thread_cslock_lock(drv_gps_pt->lock, MaxTick);
+                    // thread_cslock_free(drv_gps_pt->lock);
+                }
+                if (temp3 && temp4)
+                {
+                    strncpy(drv_gps_pt->longitude, temp3, temp4 - temp3 + 2);
+
+                    // thread_cslock_lock(drv_gps_pt->lock, MaxTick);
+                    // thread_cslock_free(drv_gps_pt->lock);
                     drv_gps_pt->buff_length = 0;
                 }
+            }
+
+            if (drv_gps_pt->buff_length >= 100)
+            {
+
+                drv_gps_pt->buff_length = 0;
             }
         }
     }
@@ -202,19 +233,20 @@ void get_gps(void)
 static Drv_Gps_t drv_gps_t;
 Drv_Gps_pt drv_gps_pt;
 
-void init_gps(void) 
+void init_gps(void)
 {
     drv_gps_pt = &drv_gps_t;
     drv_gps_pt->set_gnss = set_gnss;
     drv_gps_pt->lock = thread_cslock_init("drv_gps");
-    memset(drv_gps_pt->buff, 0, 40);
+    memset(drv_gps_pt->buff, 0, 101);
+    memset(drv_gps_pt->latitude, 0, 20);
+    memset(drv_gps_pt->longitude, 0, 20);
+
     drv_gps_pt->buff_length = 0;
     drv_gps_pt->get_gps = get_gps;
+
+
     USART1_Init();
 
     drv_gps_pt->set_gnss();
-
-
 }
-
-

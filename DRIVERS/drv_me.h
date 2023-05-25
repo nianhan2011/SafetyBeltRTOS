@@ -45,14 +45,23 @@ typedef struct // ��������֡�Ĵ����ṹ��
 
 } USART_4G_Fram;
 
+typedef enum
+{
+	ME_SEND_DEFAULT,
+	ME_CLOSE_CALL,
+	ME_SEND_DEBUG,
+} ME_STEP;
+
 typedef struct
 {
 	__IO u8 tcp_connection_status;
 	thread_cslock_t lock;
 
 	u8 imei_id[20];
+	u8 send_data[1024];
+	ME_STEP send_step;
 	void (*me_proc)(void);
-	void (*send_me)(void);
+	void (*me3630_send)(void);
 
 } Drv_Me_t, *Drv_Me_pt;
 
