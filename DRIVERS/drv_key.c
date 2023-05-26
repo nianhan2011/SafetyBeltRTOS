@@ -4,6 +4,7 @@
 #include "drv_opt.h"
 #include "drv_voice.h"
 #include "drv_me.h"
+#include "motoControl.h"
 static uint8_t get_key1_state(void)
 {
     // u8 status;
@@ -59,35 +60,45 @@ void key_handle(KEY_NAME key_name, KEY_EVENT key_event)
     case KEY_CLICK:
         if (key_name == KEY_K1)
         {
-            if (drv_me_pt->tcp_connection_status == 1)
-            {
-                thread_cslock_lock(drv_me_pt->lock, MaxTick);
+            // if (drv_me_pt->tcp_connection_status == 1)
+            // {
+            //     thread_cslock_lock(drv_me_pt->lock, MaxTick);
 
-                char mytaskstatebuffer[500];
-                vTaskList((char *)&mytaskstatebuffer);
-                WIFI_Usart("AT+ZIPSEND=1,%s\r\n",mytaskstatebuffer);
-                thread_cslock_free(drv_me_pt->lock);
-            }
+            //     char mytaskstatebuffer[500];
+            //     vTaskList((char *)&mytaskstatebuffer);
+            //     WIFI_Usart("AT+ZIPSEND=1,%s\r\n", mytaskstatebuffer);
+            //     thread_cslock_free(drv_me_pt->lock);
+            // }
         }
         else if (key_name == KEY_S1)
         {
+            drv_moto_pt->request_status = Lock_Request;
+            // thread_cslock_lock(drv_me_pt->lock, MaxTick);
+            drv_me_pt->send_cnt = 0;
+            // thread_cslock_free(drv_me_pt->lock);
+
+            drv_voice_pt->lock_request();
         }
 
         break;
     case KEY_LONG_PRESS:
         if (key_name == KEY_K1)
         {
+            drv_moto_pt->request_status = UnLock_Request;
+            // thread_cslock_lock(drv_me_pt->lock, MaxTick);
+            drv_me_pt->send_cnt = 0;
+            // thread_cslock_free(drv_me_pt->lock);
+            drv_voice_pt->unlock_request();
             // drv_height_pt->set_height_zero();
 
             // drv_height_pt->set_height_zero();
-            thread_create(drv_height_pt->set_height_zero, "set_height_zero", 1024, NULL, 3, NULL);
 
             // u32 isSetZero = 1;
             // xTaskNotify(drv_height_pt->set_height_zero, isSetZero, eSetValueWithOverwrite);
         }
         else if (key_name == KEY_S1)
         {
-            u8 tag = 4;
+            thread_create(drv_height_pt->set_height_zero, "set_height_zero", 128, NULL, 3, NULL);
         }
 
         break;

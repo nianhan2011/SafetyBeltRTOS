@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-#include "os_system__typedef.h"
 #include "drv_gps.h"
 #include "os_system__typedef.h"
 #include <string.h>
@@ -144,7 +143,7 @@ void USART1_send_array(uint8_t *array, uint8_t num)
         ;
 }
 
-static u8 itoa(u8 i)
+static u8 itoa_gps(u8 i)
 {
     if (i <= 9)
     {
@@ -173,8 +172,8 @@ static void set_gnss()
         str_tmp[10] ^= (str_tmp[i] >> 4);
         str_tmp[11] ^= (str_tmp[i] & 0x0f);
     }
-    str_tmp[10] = itoa(str_tmp[10]);
-    str_tmp[11] = itoa(str_tmp[11]);
+    str_tmp[10] = itoa_gps(str_tmp[10]);
+    str_tmp[11] = itoa_gps(str_tmp[11]);
 
     /* code */
     USART1_send_array((u8 *)str_tmp, strlen(str_tmp));

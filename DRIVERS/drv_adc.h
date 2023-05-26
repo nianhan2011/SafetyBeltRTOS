@@ -49,7 +49,11 @@ typedef struct
 {
     __IO uint16_t ADC_ConvertedValue[NOFCHANEL];
     __IO float ADC_ConvertedValueLocal[NOFCHANEL];
+    __IO u8 bat_percent;
     void (*get_adc)(void);
+    void(*startListen)(void);
+    void (*shutDownListen)(void);
+    u8 isStartTiming;
 
 } Drv_ADC_t, *Drv_ADC_pt;
 

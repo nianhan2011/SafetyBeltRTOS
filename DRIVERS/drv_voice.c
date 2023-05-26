@@ -166,6 +166,7 @@ Drv_Voice_pt drv_voice_pt;
 
 void yyhy(void)
 {
+    thread_cslock_lock(drv_voice_pt->lock, MaxTick);
     USART4_send_array(vol, sizeof(vol));
     // yy_val = 30;
     vTaskDelay(100);
@@ -174,10 +175,12 @@ void yyhy(void)
     USART4_send_array(set_02, sizeof(set_02));
     // yy_h_flag = 1;
     vTaskDelay(100);
+    thread_cslock_free(drv_voice_pt->lock);
 }
 
-void height_zero_finish(void) 
+void height_zero_finish(void)
 {
+    thread_cslock_lock(drv_voice_pt->lock, MaxTick);
     USART4_send_array(vol, sizeof(vol));
     // yy_val = 30;
     vTaskDelay(100);
@@ -185,10 +188,12 @@ void height_zero_finish(void)
     vTaskDelay(100);
     USART4_send_array(set_04, sizeof(set_04));
     vTaskDelay(100);
+    thread_cslock_free(drv_voice_pt->lock);
 }
 
 void net_success(void) // 03： 网络连接成功语音
 {
+    thread_cslock_lock(drv_voice_pt->lock, MaxTick);
     USART4_send_array(vol, sizeof(vol));
     // yy_val = 30;
     vTaskDelay(100);
@@ -196,10 +201,12 @@ void net_success(void) // 03： 网络连接成功语音
     vTaskDelay(100);
     USART4_send_array(set_03, sizeof(set_03));
     vTaskDelay(100);
+    thread_cslock_free(drv_voice_pt->lock);
 }
 
 void yy_close(void) // 05： 关机语音
 {
+    thread_cslock_lock(drv_voice_pt->lock, MaxTick);
     USART4_send_array(vol, sizeof(vol));
     // yy_val = 30;
     vTaskDelay(100);
@@ -207,10 +214,13 @@ void yy_close(void) // 05： 关机语音
     vTaskDelay(100);
     USART4_send_array(set_05, sizeof(set_05));
     vTaskDelay(100);
+    thread_cslock_free(drv_voice_pt->lock);
 }
 
 void pose_warn(void) // 01： 姿态报警语音
 {
+    thread_cslock_lock(drv_voice_pt->lock, MaxTick);
+
     USART4_send_array(vol, sizeof(vol));
     // yy_val = 10;
     vTaskDelay(100);
@@ -218,10 +228,13 @@ void pose_warn(void) // 01： 姿态报警语音
     vTaskDelay(100);
     USART4_send_array(set_01, sizeof(set_01));
     vTaskDelay(100);
+    thread_cslock_free(drv_voice_pt->lock);
 }
 
 void low_battery(void) // 09 低电量报警
 {
+    thread_cslock_lock(drv_voice_pt->lock, MaxTick);
+
     USART4_send_array(vol, sizeof(vol));
     // yy_val = 10;
     vTaskDelay(100);
@@ -229,10 +242,13 @@ void low_battery(void) // 09 低电量报警
     vTaskDelay(100);
     USART4_send_array(set_09, sizeof(set_09));
     vTaskDelay(100);
+    thread_cslock_free(drv_voice_pt->lock);
 }
 
 void unlock_finish(void) // 11 设备已解锁语音
 {
+    thread_cslock_lock(drv_voice_pt->lock, MaxTick);
+
     USART4_send_array(vol, sizeof(vol));
     // yy_val = 30;
     vTaskDelay(100);
@@ -240,22 +256,14 @@ void unlock_finish(void) // 11 设备已解锁语音
     vTaskDelay(100);
     USART4_send_array(set_11, sizeof(set_11));
     vTaskDelay(100);
+    thread_cslock_free(drv_voice_pt->lock);
 }
 
 /************新增3个语音模块*****************/
 void lock_request(void) // 06 请求上锁语音
 {
-    USART4_send_array(vol, sizeof(vol));
-    // yy_val = 10;
-    vTaskDelay(100);
-    USART4_send_array(mode_single_stop, sizeof(mode_single_stop));
-    vTaskDelay(100);
-    USART4_send_array(set_06, sizeof(set_06));
-    vTaskDelay(100);
-}
+    thread_cslock_lock(drv_voice_pt->lock, MaxTick);
 
-void unlock_request(void) // 07 请求解锁语音
-{
     USART4_send_array(vol, sizeof(vol));
     // yy_val = 10;
     vTaskDelay(100);
@@ -263,10 +271,27 @@ void unlock_request(void) // 07 请求解锁语音
     vTaskDelay(100);
     USART4_send_array(set_07, sizeof(set_07));
     vTaskDelay(100);
+    thread_cslock_free(drv_voice_pt->lock);
+}
+
+void unlock_request(void) // 07 请求解锁语音
+{
+    thread_cslock_lock(drv_voice_pt->lock, MaxTick);
+
+    USART4_send_array(vol, sizeof(vol));
+    // yy_val = 10;
+    vTaskDelay(100);
+    USART4_send_array(mode_single_stop, sizeof(mode_single_stop));
+    vTaskDelay(100);
+    USART4_send_array(set_06, sizeof(set_06));
+    vTaskDelay(100);
+    thread_cslock_free(drv_voice_pt->lock);
 }
 
 void sos(void) // 08 紧急求救语音
 {
+    thread_cslock_lock(drv_voice_pt->lock, MaxTick);
+
     USART4_send_array(vol, sizeof(vol));
     // yy_val = 10;
     vTaskDelay(100);
@@ -274,10 +299,13 @@ void sos(void) // 08 紧急求救语音
     vTaskDelay(100);
     USART4_send_array(set_08, sizeof(set_08));
     vTaskDelay(100);
+    thread_cslock_free(drv_voice_pt->lock);
 }
 
 void danger_height(void) // 12 危险高度语音
 {
+    thread_cslock_lock(drv_voice_pt->lock, MaxTick);
+
     USART4_send_array(vol, sizeof(vol));
     // yy_val = 10;
     vTaskDelay(100);
@@ -285,9 +313,12 @@ void danger_height(void) // 12 危险高度语音
     vTaskDelay(100);
     USART4_send_array(set_12, sizeof(set_12));
     vTaskDelay(100);
+    thread_cslock_free(drv_voice_pt->lock);
 }
 void fatigue(void) // 13 疲劳语音
 {
+    thread_cslock_lock(drv_voice_pt->lock, MaxTick);
+
     USART4_send_array(vol, sizeof(vol));
     // yy_val = 10;
     vTaskDelay(100);
@@ -295,9 +326,12 @@ void fatigue(void) // 13 疲劳语音
     vTaskDelay(100);
     USART4_send_array(set_13, sizeof(set_13));
     vTaskDelay(100);
+    thread_cslock_free(drv_voice_pt->lock);
 }
 void open_hooking(void) // 14 打开挂钩
 {
+    thread_cslock_lock(drv_voice_pt->lock, MaxTick);
+
     USART4_send_array(vol, sizeof(vol));
     // yy_val = 10;
     vTaskDelay(100);
@@ -305,8 +339,9 @@ void open_hooking(void) // 14 打开挂钩
     vTaskDelay(100);
     USART4_send_array(set_14, sizeof(set_14));
     vTaskDelay(100);
+    thread_cslock_free(drv_voice_pt->lock);
 }
-void init_voice(void) 
+void init_voice(void)
 {
     drv_voice_pt = &drv_voice_t;
     drv_voice_pt->yyhy = yyhy;
@@ -325,5 +360,3 @@ void init_voice(void)
 
     USART4_Init();
 }
-
-

@@ -12,7 +12,8 @@
 #include "drv_voice.h"
 #include "drv_gps.h"
 #include "drv_me.h"
-
+#include "drv_flash.h"
+#include "motoControl.h"
 void main_task(void);
 
 int main(void)
@@ -34,10 +35,15 @@ void main_task(void)
     init_voice();
     init_gps();
     init_me();
-
+    init_flash();
+    init_moto();
     vTaskDelay(500);
 
     taskENTER_CRITICAL(); // 进入临界区
+
+    // thread_create(drv_adc_pt->startListen, "startListen", 32, NULL, 3, NULL);
+    thread_create(drv_adc_pt->get_adc, "get_adc", 64, NULL, 2, NULL);
+    // thread_create(drv_adc_pt->shutDownListen, "shutDownListen", 32, NULL, 2, NULL);
 
     thread_create(turn_led, "turn_led", 32, NULL, 2, NULL);
     thread_create(key_proc, "key_proc", 164, NULL, 2, NULL);

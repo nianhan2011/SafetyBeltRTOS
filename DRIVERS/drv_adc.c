@@ -1,7 +1,9 @@
 #include "drv_adc.h"
 #include <string.h>
 #include "os_system__typedef.h"
-
+#include "Common.h"
+#include "drv_opt.h"
+#include "drv_voice.h"
 static Drv_ADC_t drv_adc_t;
 Drv_ADC_pt drv_adc_pt;
 
@@ -11,18 +13,18 @@ static void ADCx_GPIO_Config(void)
 
 	// 打开 ADC IO端口时钟
 	ADC_GPIO_APBxClock_FUN(RCC_APB2Periph_GPIOA, ENABLE);
-	ADC_GPIO_APBxClock_FUN(RCC_APB2Periph_GPIOB, ENABLE);
+	ADC_GPIO_APBxClock_FUN(RCC_APB2Periph_GPIOC, ENABLE);
 
 	// 配置 ADC IO 引脚模式
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_6;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4 | GPIO_Pin_5;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
 	// 初始化 ADC IO
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
+	GPIO_Init(GPIOC, &GPIO_InitStructure);
 
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
 
-	GPIO_Init(GPIOB, &GPIO_InitStructure);
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
 }
 
 // ANSI C标准，C89 标准
@@ -75,9 +77,9 @@ static void ADCx_Mode_Config(void)
 	// 8分频 72/8 = 9
 	RCC_ADCCLKConfig(RCC_PCLK2_Div8);
 
-	ADC_RegularChannelConfig(ADC_x, ADC_Channel_5, 1, ADC_SampleTime_239Cycles5);
-	ADC_RegularChannelConfig(ADC_x, ADC_Channel_6, 2, ADC_SampleTime_239Cycles5);
-	ADC_RegularChannelConfig(ADC_x, ADC_Channel_8, 3, ADC_SampleTime_239Cycles5);
+	ADC_RegularChannelConfig(ADC_x, ADC_Channel_14, 1, ADC_SampleTime_239Cycles5);
+	ADC_RegularChannelConfig(ADC_x, ADC_Channel_15, 2, ADC_SampleTime_239Cycles5);
+	ADC_RegularChannelConfig(ADC_x, ADC_Channel_5, 3, ADC_SampleTime_239Cycles5);
 
 	// 使能ADC DMA 请求
 	ADC_DMACmd(ADC_x, ENABLE);
@@ -112,20 +114,77 @@ void get_adc()
 		drv_adc_pt->ADC_ConvertedValueLocal[1] = (float)drv_adc_pt->ADC_ConvertedValue[1] / 4096 * 3.3;
 		drv_adc_pt->ADC_ConvertedValueLocal[2] = (float)drv_adc_pt->ADC_ConvertedValue[2] / 4096 * 3.3;
 
-		if (drv_adc_pt->ADC_ConvertedValueLocal[0] >= 0 && drv_adc_pt->ADC_ConvertedValueLocal[0] <= 1.6)
+		// drv_adc_pt->bat_percent = (drv_adc_pt->ADC_ConvertedValueLocal[1] * 2 - 3.5) *100/(4.2-3.5);
+		drv_adc_pt->bat_percent = (drv_adc_pt->ADC_ConvertedValueLocal[1] * 2) / 5.0 * 100;
+		if (drv_adc_pt->bat_percent > 100) 
 		{
-			// Attitude_Alarm = 1;
+			drv_adc_pt->bat_percent = 100;
+		}
+
+			// if (drv_adc_pt->ADC_ConvertedValueLocal[0] >= 0 && drv_adc_pt->ADC_ConvertedValueLocal[0] <= 1.6)
+			// {
+			// 	// Attitude_Alarm = 1;
+			// }
+			// else
+			// {
+
+			// 	// Attitude_Alarm = 0;
+			// }
+
+			vTaskDelay(10);
+	}
+}
+
+void startListen(void)
+{
+
+	taskENTER_CRITICAL(); // 进入临界区
+	u16 start_time = 200;
+	while (start_time)
+	{
+		drv_adc_pt->ADC_ConvertedValueLocal[0] = (float)drv_adc_pt->ADC_ConvertedValue[0] / 4096 * 3.3;
+		if (drv_adc_pt->ADC_ConvertedValueLocal[0] < 0.3)
+		{
+			PBout(13) = 0;
+			while (1)
+				;
+		}
+		timtick->delay(1);
+		start_time--;
+	}
+	drv_adc_pt->isStartTiming = 1;
+	taskEXIT_CRITICAL();
+
+	vTaskDelete(NULL);
+}
+
+void shutDownListen(void)
+{
+	while (1)
+	{
+		drv_adc_pt->ADC_ConvertedValueLocal[0] = (float)drv_adc_pt->ADC_ConvertedValue[0] / 4096 * 3.3;
+
+		if (drv_adc_pt->ADC_ConvertedValueLocal[0] >= 0.3)
+		{
+			// u16 end_time = 300;
+
+			// while (end_time)
+			// {
+			// 	drv_adc_pt->ADC_ConvertedValueLocal[0] = (float)drv_adc_pt->ADC_ConvertedValue[0] / 4096 * 3.3;
+			// 	if (drv_adc_pt->ADC_ConvertedValueLocal[0] >= 0.3)
+			// 	{
+			// 		break;
+			// 	}
+			// 	vTaskDelay(10);
+			// 	end_time--;
+			// }
+			// drv_voice_pt->yy_close();
+			// PBout(13) = 0;
 		}
 		else
 		{
-
-			// Attitude_Alarm = 0;
 		}
-
-		vTaskDelay(10);
 	}
-
-	
 }
 
 void init_adc(void)
@@ -134,6 +193,7 @@ void init_adc(void)
 	memset(drv_adc_pt->ADC_ConvertedValueLocal, 0, NOFCHANEL);
 	memset(drv_adc_pt->ADC_ConvertedValue, 0, NOFCHANEL);
 	drv_adc_pt->get_adc = get_adc;
-
+	drv_adc_pt->startListen = startListen;
+	drv_adc_pt->shutDownListen = shutDownListen;
 	ADCx_Init();
 }

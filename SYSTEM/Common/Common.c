@@ -4,7 +4,7 @@
 
 
 
-static char *                 itoa                                ( int value, char * string, int radix );
+ char *                 itoa                                ( int value, char * string, int radix );
 
 
 /*
@@ -112,7 +112,7 @@ void USART_printf ( USART_TypeDef * USARTx, char * Data, ... )
  * 返回  ：无
  * 调用  ：被USART2_printf()调用
  */
-static char * itoa( int value, char *string, int radix )
+char * itoa( int value, char *string, int radix )
 {
 	int     i, d;
 	int     flag = 0;

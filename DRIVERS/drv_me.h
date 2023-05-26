@@ -59,6 +59,7 @@ typedef struct
 
 	u8 imei_id[20];
 	u8 send_data[1024];
+	u16 send_cnt;
 	ME_STEP send_step;
 	void (*me_proc)(void);
 	void (*me3630_send)(void);

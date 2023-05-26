@@ -4,6 +4,9 @@
 #include "drv_voice.h"
 #include "drv_gps.h"
 #include "drv_opt.h"
+#include "drv_adc.h"
+#include "Common.h"
+#include "motoControl.h"
 
 static void USART_GPIO_Config(void);
 static void USART_USART_Config(void);
@@ -412,35 +415,66 @@ restart:
 
 static void pre_send_data(void)
 {
-	memset(drv_me_pt->send_data,0,1024);
+	memset(drv_me_pt->send_data, 0, 1024);
 
-	strcat(drv_me_pt->send_data, drv_me_pt->imei_id);//imei
+	strcat(drv_me_pt->send_data, drv_me_pt->imei_id); // imei
 	strcat(drv_me_pt->send_data, " ");
 
-	strcat(drv_me_pt->send_data, "101.1");//气压
+	strcat(drv_me_pt->send_data, "101.1"); // 气压
 	strcat(drv_me_pt->send_data, " ");
 
-	strcat(drv_me_pt->send_data, "O2");//设备状态
+	switch (drv_moto_pt->device_status)
+	{
+	case Device_Status_Off:
+		strcat(drv_me_pt->send_data, "OF"); // 关机
+		break;
+	case Device_Status_Lock:
+		strcat(drv_me_pt->send_data, "C1"); // 已上锁
+		break;
+	case Device_Status_UnLock:
+		strcat(drv_me_pt->send_data, "O2"); // 已解锁
+		break;
+	}
 	strcat(drv_me_pt->send_data, " ");
 
-	strcat(drv_me_pt->send_data, "100");//电量
+	// char height_str[10];
+	// sprintf(height_str, "T%d", drv_height_pt->height);
+
+	char bat_percent_str[10];
+	itoa(drv_adc_pt->bat_percent, bat_percent_str, 10);
+	strcat(drv_me_pt->send_data, bat_percent_str); // 电量
 	strcat(drv_me_pt->send_data, " ");
 
-	// strcat(drv_me_pt->send_data, "C11"); // 请求上锁/解锁
-	// strcat(drv_me_pt->send_data, " ");
+	switch (drv_moto_pt->request_status)
+	{
+	case No_Request:
+		/* code */
+		break;
+	case Lock_Request:
+		strcat(drv_me_pt->send_data, "C11"); // 请求上锁
+		strcat(drv_me_pt->send_data, " ");
+		break;
+	case UnLock_Request:
+		strcat(drv_me_pt->send_data, "C22"); // 请求解锁
+		strcat(drv_me_pt->send_data, " ");
+		break;
+	}
 
 	// strcat(drv_me_pt->send_data, "W11"); // 工人请求/报警/高度
 	// strcat(drv_me_pt->send_data, " ");
 
-    char height_str[10];
-	sprintf(height_str, "T%d",drv_height_pt->height);
+	char height_str[10];
+	sprintf(height_str, "T%d", drv_height_pt->height);
 	strcat(drv_me_pt->send_data, height_str); // 工人请求/报警/高度
 	strcat(drv_me_pt->send_data, " ");
 
 	strcat(drv_me_pt->send_data, drv_gps_pt->latitude); // 维度
 	strcat(drv_me_pt->send_data, " ");
 
-	strcat(drv_me_pt->send_data, drv_gps_pt->longitude  ); // 经度
+	strcat(drv_me_pt->send_data, drv_gps_pt->longitude); // 经度
+	strcat(drv_me_pt->send_data, " ");
+
+	strcat(drv_me_pt->send_data, "460.0"); // 基站
 	strcat(drv_me_pt->send_data, " ");
 }
 
@@ -450,26 +484,28 @@ void me3630_send(void)
 	while (1)
 	{
 		/* code */
-		switch (drv_me_pt->send_step)
+
+		if (drv_me_pt->send_cnt == 0)
 		{
-		case ME_SEND_DEFAULT:
 			if (drv_me_pt->tcp_connection_status == true)
 			{
 				pre_send_data();
 				thread_cslock_lock(drv_me_pt->lock, MaxTick);
-
 				WIFI_Usart("%s\r\n", drv_me_pt->send_data);
 				vTaskDelay(50);
 				thread_cslock_free(drv_me_pt->lock);
+				drv_me_pt->send_cnt = 500;
 			}
-			/* code */
-			break;
-
-		default:
-			break;
 		}
+		else
+		{
+			thread_cslock_lock(drv_me_pt->lock, MaxTick);
+			drv_me_pt->send_cnt--;
+			thread_cslock_free(drv_me_pt->lock);
+		}
+		/* code */
 
-		vTaskDelay(5000);
+		vTaskDelay(10);
 	}
 }
 
@@ -490,20 +526,31 @@ void me3630_receive(void)
 		clearFrame();
 		// WIFI_Usart("%s\r\n", "AT+");
 	}
-	if (strstr(pRecStr, "S44"))
+	if (strstr(pRecStr, "S44")) // 解锁锁回复
 	{
-
+		drv_moto_pt->request_status = No_Request;
+		drv_moto_pt->device_status = Device_Status_UnLock;
 		drv_voice_pt->unlock_finish();
+
+		drv_me_pt->send_cnt = 0;
+
 		clearFrame();
 	}
-	if (strstr(pRecStr, "S33"))
+	if (strstr(pRecStr, "O33")) // 上锁回复
 	{
-		drv_voice_pt->open_hooking();
+
+		drv_moto_pt->request_status = No_Request;
+		drv_moto_pt->device_status = Device_Status_Lock;
+		drv_voice_pt->lock_request();
+
+		drv_me_pt->send_cnt = 0;
+
 		clearFrame();
 	}
 
-	if (strstr(pRecStr, "+ZIPSEND"))
+	if (strstr(pRecStr, "P10") || strstr(pRecStr, "P11"))
 	{
+		drv_voice_pt->sos();
 		clearFrame();
 	}
 }
@@ -531,6 +578,7 @@ static Drv_Me_t drv_me_t = {
 	.imei_id = {0},
 	.send_step = ME_SEND_DEFAULT,
 	.send_data = {0},
+	.send_cnt = 500,
 };
 Drv_Me_pt drv_me_pt;
 

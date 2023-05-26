@@ -945,6 +945,26 @@
               <FileType>5</FileType>
               <FilePath>.\DRIVERS\drv_me.h</FilePath>
             </File>
+            <File>
+              <FileName>drv_flash.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\DRIVERS\drv_flash.c</FilePath>
+            </File>
+            <File>
+              <FileName>drv_flash.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\DRIVERS\drv_flash.h</FilePath>
+            </File>
+            <File>
+              <FileName>motoControl.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\DRIVERS\motoControl.c</FilePath>
+            </File>
+            <File>
+              <FileName>motoControl.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\DRIVERS\motoControl.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
