@@ -50,6 +50,7 @@ typedef struct
     __IO uint16_t ADC_ConvertedValue[NOFCHANEL];
     __IO float ADC_ConvertedValueLocal[NOFCHANEL];
     __IO u8 bat_percent;
+    __IO u32 bat_low_voice_cnt;
     void (*get_adc)(void);
     void(*startListen)(void);
     void (*shutDownListen)(void);

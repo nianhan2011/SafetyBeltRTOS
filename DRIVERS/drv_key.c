@@ -5,6 +5,8 @@
 #include "drv_voice.h"
 #include "drv_me.h"
 #include "motoControl.h"
+#include "drv_flash.h"
+
 static uint8_t get_key1_state(void)
 {
     // u8 status;
@@ -50,6 +52,7 @@ void key_init(void)
         key_propertys[i].press_long_time = 300;
         key_propertys[i].press_continuous_long_time = 15;
         key_propertys[i].key_status = 0;
+        key_propertys[i].key_double_click_time = 20;
     }
 }
 
@@ -60,22 +63,20 @@ void key_handle(KEY_NAME key_name, KEY_EVENT key_event)
     case KEY_CLICK:
         if (key_name == KEY_K1)
         {
-            // if (drv_me_pt->tcp_connection_status == 1)
-            // {
-            //     thread_cslock_lock(drv_me_pt->lock, MaxTick);
-
-            //     char mytaskstatebuffer[500];
-            //     vTaskList((char *)&mytaskstatebuffer);
-            //     WIFI_Usart("AT+ZIPSEND=1,%s\r\n", mytaskstatebuffer);
-            //     thread_cslock_free(drv_me_pt->lock);
-            // }
+            if (drv_me_pt->tcp_connection_status == 1)
+            {
+                thread_cslock_lock(drv_me_pt->lock, MaxTick);
+                char mytaskstatebuffer[500];
+                vTaskList((char *)&mytaskstatebuffer);
+                WIFI_Usart("%s\r\n", mytaskstatebuffer);
+                vTaskDelay(50);
+                thread_cslock_free(drv_me_pt->lock);
+            }
         }
         else if (key_name == KEY_S1)
         {
             drv_moto_pt->request_status = Lock_Request;
-            // thread_cslock_lock(drv_me_pt->lock, MaxTick);
-            drv_me_pt->send_cnt = 0;
-            // thread_cslock_free(drv_me_pt->lock);
+            drv_me_pt->set_send_cnt(0);
 
             drv_voice_pt->lock_request();
         }
@@ -86,7 +87,7 @@ void key_handle(KEY_NAME key_name, KEY_EVENT key_event)
         {
             drv_moto_pt->request_status = UnLock_Request;
             // thread_cslock_lock(drv_me_pt->lock, MaxTick);
-            drv_me_pt->send_cnt = 0;
+            drv_me_pt->set_send_cnt(0);
             // thread_cslock_free(drv_me_pt->lock);
             drv_voice_pt->unlock_request();
             // drv_height_pt->set_height_zero();
@@ -98,7 +99,34 @@ void key_handle(KEY_NAME key_name, KEY_EVENT key_event)
         }
         else if (key_name == KEY_S1)
         {
-            thread_create(drv_height_pt->set_height_zero, "set_height_zero", 128, NULL, 3, NULL);
+            drv_flash_pt->read_from_flash();
+
+            if (drv_flash_pt->permissions_t.height_check)
+            {
+                thread_create(drv_height_pt->set_height_zero, "set_height_zero", 128, NULL, 3, NULL);
+            }
+        }
+
+        break;
+    case KEY_DOUBLE_CLICK:
+
+        if (key_name == KEY_K1)
+        {
+            drv_moto_pt->sos = 1;
+            drv_me_pt->set_send_cnt(0);
+            drv_voice_pt->sos();
+        }
+        else if (key_name == KEY_S1)
+        {
+            drv_flash_pt->read_from_flash();
+
+            if (drv_flash_pt->permissions_t.emergency_unclock)
+            {
+                drv_moto_pt->emer_unlock = 1;
+                drv_me_pt->set_send_cnt(0);
+
+                drv_voice_pt->unlock_finish();
+            }
         }
 
         break;
@@ -113,102 +141,141 @@ void key_proc(void)
     uint8_t key;
     KEY_EVENT key_event;
 
+    const EventBits_t xBitsToWaitFor = TCP_TASK_BIT;
+
     while (1)
     {
         /* code */
-
-        for (uint8_t i = 0; i < KEY_SUM; i++)
+        /* 获取事件位 */
+        EventBits_t xEventGroupValue = xEventGroupWaitBits(drv_me_pt->tcp_group_handle, /* 事件组的句柄 */
+                                                           xBitsToWaitFor,              /* 待测试的事件位 */
+                                                           pdFALSE,                     /* 满足添加时清除上面的事件位 */
+                                                           pdFALSE,                     /* 任意事件位被设置就会退出阻塞态 */
+                                                           portMAX_DELAY);              /* 没有超时 */
+        /* 根据相应的事件位输出提示信息 */
+        if ((xEventGroupValue & TCP_TASK_BIT) != 0)
         {
-            key = 0;
-            key_event = 0;
-            key_propertys[i].key_status = get_key_state[i]();
+            /* code */
 
-            switch (key_propertys[i].key_step)
+            for (uint8_t i = 0; i < KEY_SUM; i++)
             {
-            case KEY_STEP_WAIT:
-                if (key_propertys[i].key_status)
+                key = 0;
+                key_event = 0;
+                key_propertys[i].key_status = get_key_state[i]();
+
+                switch (key_propertys[i].key_step)
                 {
-                    key_propertys[i].key_step = KEY_STEP_CLICK;
-                }
-                break;
-            case KEY_STEP_CLICK:
-                if (key_propertys[i].key_status)
-                {
-                    if (!(--(key_propertys[i].scan_time)))
+                case KEY_STEP_WAIT:
+                    if (key_propertys[i].key_status)
+                    {
+                        key_propertys[i].key_step = KEY_STEP_CLICK;
+                    }
+                    break;
+                case KEY_STEP_CLICK:
+                    if (key_propertys[i].key_status)
+                    {
+                        if (!(--(key_propertys[i].scan_time)))
+                        {
+                            key_propertys[i].scan_time = 2;
+                            key_propertys[i].key_step = KEY_STEP_LONG_PRESS;
+                            // key = i + 1;
+                            // key_event = KEY_CLICK;
+                        }
+                    }
+                    else
                     {
                         key_propertys[i].scan_time = 2;
-                        key_propertys[i].key_step = KEY_STEP_LONG_PRESS;
-                        key = i + 1;
-                        key_event = KEY_CLICK;
+                        key_propertys[i].key_step = KEY_STEP_WAIT;
                     }
-                }
-                else
-                {
-                    key_propertys[i].scan_time = 2;
-                    key_propertys[i].key_step = KEY_STEP_WAIT;
-                }
-                break;
+                    break;
 
-            case KEY_STEP_LONG_PRESS:
+                case KEY_STEP_LONG_PRESS:
 
-                if (key_propertys[i].key_status)
-                {
-                    if (!(--(key_propertys[i].press_long_time)))
+                    if (key_propertys[i].key_status)
+                    {
+                        if (!(--(key_propertys[i].press_long_time)))
+                        {
+                            key_propertys[i].press_long_time = 300;
+                            key_propertys[i].key_step = KEY_STEP_CONTINUOUS_PRESS;
+
+                            key = i + 1;
+                            key_event = KEY_LONG_PRESS;
+                        }
+                    }
+                    else
                     {
                         key_propertys[i].press_long_time = 300;
-                        key_propertys[i].key_step = KEY_STEP_CONTINUOUS_PRESS;
+                        key_propertys[i].key_step = KEY_STEP_CLICK_RELEASE;
 
-                        key = i + 1;
-                        key_event = KEY_LONG_PRESS;
+                        // key = i + 1;
+                        // key_event = KEY_CLICK_RELEASE;
+                        // key_event = KEY_CLICK;
                     }
-                }
-                else
-                {
-                    key_propertys[i].press_long_time = 300;
-                    key_propertys[i].key_step = KEY_STEP_WAIT;
+                    break;
+                case KEY_STEP_CLICK_RELEASE:
 
-                    key = i + 1;
-                    key_event = KEY_CLICK_RELEASE;
-                }
-                break;
-
-            case KEY_STEP_CONTINUOUS_PRESS:
-                if (key_propertys[i].key_status)
-                {
-                    if (!(--(key_propertys[i].press_continuous_long_time)))
+                    if (key_propertys[i].key_status)
                     {
+                        if ((--(key_propertys[i].key_double_click_time)))
+                        {
+                            key_propertys[i].key_double_click_time = 20;
+                            key_propertys[i].key_step = KEY_STEP_WAIT;
+
+                            key = i + 1;
+                            key_event = KEY_DOUBLE_CLICK;
+                        }
+                    }
+                    else
+                    {
+                        if (--(key_propertys[i].key_double_click_time) == 0)
+                        {
+                            key_propertys[i].key_double_click_time = 20;
+                            key_propertys[i].key_step = KEY_STEP_WAIT;
+                            key = i + 1;
+                            key_event = KEY_CLICK;
+                        }
+                    }
+
+                    break;
+
+                case KEY_STEP_CONTINUOUS_PRESS:
+                    if (key_propertys[i].key_status)
+                    {
+                        if (!(--(key_propertys[i].press_continuous_long_time)))
+                        {
+                            key_propertys[i].press_continuous_long_time = 15;
+
+                            key = i + 1;
+                            key_event = KEY_LONG_PRESS_CONTINUOUS;
+                        }
+                    }
+                    else
+                    {
+                        key_propertys[i].key_step = KEY_STEP_WAIT;
                         key_propertys[i].press_continuous_long_time = 15;
 
                         key = i + 1;
-                        key_event = KEY_LONG_PRESS_CONTINUOUS;
+                        key_event = KEY_LONG_PRESS_RELEASE;
                     }
+
+                    break;
+
+                default:
+                    break;
                 }
-                else
+
+                if (key)
                 {
-                    key_propertys[i].key_step = KEY_STEP_WAIT;
-                    key_propertys[i].press_continuous_long_time = 15;
-
-                    key = i + 1;
-                    key_event = KEY_LONG_PRESS_RELEASE;
+                    //                if (key_callback)
+                    //                {
+                    // key_callback(key - 1, key_event);
+                    key_handle(key - 1, key_event);
+                    //                }
                 }
-
-                break;
-
-            default:
-                break;
             }
 
-            if (key)
-            {
-                //                if (key_callback)
-                //                {
-                // key_callback(key - 1, key_event);
-                key_handle(key - 1, key_event);
-                //                }
-            }
+            vTaskDelay(10);
         }
-
-        vTaskDelay(10);
     }
 }
 

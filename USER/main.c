@@ -20,7 +20,7 @@ int main(void)
 {
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4); // 设置NVIC中断分组2:2位抢占优先级，2位响应优先级
 
-    thread_create(main_task, "main_task", 1024, NULL, 1, NULL);
+    thread_create(main_task, "main_task", 256, NULL, 1, NULL);
     vTaskStartScheduler();
 }
 
@@ -41,18 +41,23 @@ void main_task(void)
 
     taskENTER_CRITICAL(); // 进入临界区
 
-    // thread_create(drv_adc_pt->startListen, "startListen", 32, NULL, 3, NULL);
+    // thread_create(drv_adc_pt->startListen, "startListen", 32, NULL, 4, NULL);
+    thread_create(drv_me_pt->tcp_task, "tcp_task", 128, NULL, 3, NULL);
+
     thread_create(drv_adc_pt->get_adc, "get_adc", 64, NULL, 2, NULL);
     // thread_create(drv_adc_pt->shutDownListen, "shutDownListen", 32, NULL, 2, NULL);
 
-    thread_create(turn_led, "turn_led", 32, NULL, 2, NULL);
-    thread_create(key_proc, "key_proc", 164, NULL, 2, NULL);
-    thread_create(drv_height_pt->get_barometric, "get_barometric", 128, NULL, 2, NULL);
+    thread_create(turn_led, "turn_led", 64, NULL, 2, NULL);
+    thread_create(key_proc, "key_proc", 256, NULL, 2, NULL);
+
+    thread_create(drv_height_pt->get_barometric, "get_barometric", 164, NULL, 2, NULL);
+    thread_create(drv_height_pt->fall_check, "fall_check", 164, NULL, 2, NULL);
+    thread_create(drv_height_pt->height_check, "height_check", 98, NULL, 2, NULL);
+
     thread_create(drv_gps_pt->get_gps, "get_gps", 128, NULL, 2, NULL);
+
     thread_create(drv_me_pt->me_proc, "me_proc", 128, NULL, 2, NULL);
     thread_create(drv_me_pt->me3630_send, "me3630_send", 128, NULL, 2, NULL);
-
-    // thread_create(drv_adc_pt->get_adc, "get_adc", 1024, NULL, 2, NULL);
 
     vTaskDelete(NULL);   // 删除AppTaskCreate任务
     taskEXIT_CRITICAL(); // 退出临界区

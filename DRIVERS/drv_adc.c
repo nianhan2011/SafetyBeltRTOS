@@ -112,26 +112,47 @@ void get_adc()
 
 		drv_adc_pt->ADC_ConvertedValueLocal[0] = (float)drv_adc_pt->ADC_ConvertedValue[0] / 4096 * 3.3;
 		drv_adc_pt->ADC_ConvertedValueLocal[1] = (float)drv_adc_pt->ADC_ConvertedValue[1] / 4096 * 3.3;
-		drv_adc_pt->ADC_ConvertedValueLocal[2] = (float)drv_adc_pt->ADC_ConvertedValue[2] / 4096 * 3.3;
-
+ 
 		// drv_adc_pt->bat_percent = (drv_adc_pt->ADC_ConvertedValueLocal[1] * 2 - 3.5) *100/(4.2-3.5);
 		drv_adc_pt->bat_percent = (drv_adc_pt->ADC_ConvertedValueLocal[1] * 2) / 5.0 * 100;
-		if (drv_adc_pt->bat_percent > 100) 
+		if (drv_adc_pt->bat_percent > 100)
 		{
 			drv_adc_pt->bat_percent = 100;
 		}
 
-			// if (drv_adc_pt->ADC_ConvertedValueLocal[0] >= 0 && drv_adc_pt->ADC_ConvertedValueLocal[0] <= 1.6)
-			// {
-			// 	// Attitude_Alarm = 1;
-			// }
-			// else
-			// {
+		if (drv_adc_pt->bat_percent < 10)
+		{
+			PAout(11) = 1;
+			PAout(8) = 0;
 
-			// 	// Attitude_Alarm = 0;
-			// }
+			if (drv_adc_pt->bat_low_voice_cnt == 0)
+			{
+				drv_adc_pt->bat_low_voice_cnt = 3000;
+				drv_voice_pt->low_battery();
+			}
+			else
+			{
+				drv_adc_pt->bat_low_voice_cnt--;
+			}
+		}
+		else
+		{
+			PAout(11) = 0;
+			PAout(8) = 1;
+			drv_adc_pt->bat_low_voice_cnt = 3000;
+		}
 
-			vTaskDelay(10);
+		// if (drv_adc_pt->ADC_ConvertedValueLocal[0] >= 0 && drv_adc_pt->ADC_ConvertedValueLocal[0] <= 1.6)
+		// {
+		// 	// Attitude_Alarm = 1;
+		// }
+		// else
+		// {
+
+		// 	// Attitude_Alarm = 0;
+		// }
+
+		vTaskDelay(10);
 	}
 }
 
@@ -195,5 +216,6 @@ void init_adc(void)
 	drv_adc_pt->get_adc = get_adc;
 	drv_adc_pt->startListen = startListen;
 	drv_adc_pt->shutDownListen = shutDownListen;
+	drv_adc_pt->bat_low_voice_cnt = 3000;
 	ADCx_Init();
 }

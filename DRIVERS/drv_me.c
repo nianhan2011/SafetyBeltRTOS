@@ -7,6 +7,8 @@
 #include "drv_adc.h"
 #include "Common.h"
 #include "motoControl.h"
+#include "drv_flash.h"
+#include <stdlib.h>
 
 static void USART_GPIO_Config(void);
 static void USART_USART_Config(void);
@@ -411,6 +413,90 @@ restart:
 
 	drv_me_pt->tcp_connection_status = true;
 	drv_voice_pt->net_success();
+	PCout(8) = 1;
+}
+
+void tcp_task()
+{
+
+restart:
+
+	drv_voice_pt->yyhy();
+	GPIO_SetBits(GPIOC, GPIO_Pin_9);
+	vTaskDelay(200);
+	GPIO_ResetBits(GPIOC, GPIO_Pin_9);
+	vTaskDelay(1000);
+
+	timeout = 50;
+	while (!ME_115200())
+	{
+		if ((timeout--) == 0)
+			goto restart;
+	};
+
+	timeout = 50;
+	while (!ME_GetIMEI())
+	{
+		if ((timeout--) == 0)
+			goto restart;
+	}
+
+	timeout = 50;
+	while (!ME_CPIN())
+	{
+		if ((timeout--) == 0)
+			goto restart;
+	};
+
+	timeout = 50;
+	while (!ME_RSSI())
+	{
+		if ((timeout--) == 0)
+			goto restart;
+	}
+
+	timeout = 50;
+
+	while (!ME_CEREG())
+	{
+		if ((timeout--) == 0)
+			goto restart;
+	};
+	timeout = 50;
+
+	while (!Open_Call())
+	{
+		if ((timeout--) == 0)
+			goto restart;
+	};
+	timeout = 50;
+
+	while (!TCP_Connect())
+	{
+		if ((timeout--) == 0)
+			goto restart;
+	};
+	timeout = 50;
+	while (!TCP_Keep_ALive())
+	{
+		if ((timeout--) == 0)
+			goto restart;
+	}
+
+	timeout = 50;
+	while (!transmission_mode())
+	{
+		if ((timeout--) == 0)
+			goto restart;
+	}
+
+	drv_me_pt->tcp_connection_status = true;
+	drv_voice_pt->net_success();
+	PCout(8) = 1;
+
+	xEventGroupSetBits(drv_me_pt->tcp_group_handle, TCP_TASK_BIT);
+
+	vTaskDelete(NULL);
 }
 
 static void pre_send_data(void)
@@ -460,13 +546,37 @@ static void pre_send_data(void)
 		break;
 	}
 
+	if ( drv_moto_pt->fail_warn)
+	{
+		drv_moto_pt->fail_warn = 0;
+		strcat(drv_me_pt->send_data, "WG1"); // 坠落报警
+		strcat(drv_me_pt->send_data, " ");
+	}
+
+	 if (drv_moto_pt->sos)
+	{
+		drv_moto_pt->sos = 0;
+		strcat(drv_me_pt->send_data, "SOS"); // SOS
+		strcat(drv_me_pt->send_data, " ");
+	}
+
+	if (drv_moto_pt->emer_unlock)
+	{
+		drv_moto_pt->emer_unlock = 0;
+		strcat(drv_me_pt->send_data, "WS1"); // SOS
+		strcat(drv_me_pt->send_data, " ");
+	}
+
 	// strcat(drv_me_pt->send_data, "W11"); // 工人请求/报警/高度
 	// strcat(drv_me_pt->send_data, " ");
 
-	char height_str[10];
-	sprintf(height_str, "T%d", drv_height_pt->height);
-	strcat(drv_me_pt->send_data, height_str); // 工人请求/报警/高度
-	strcat(drv_me_pt->send_data, " ");
+	if (drv_height_pt->set_zero_success)
+	{
+		char height_str[10];
+		sprintf(height_str, "T%d", drv_height_pt->height);
+		strcat(drv_me_pt->send_data, height_str); // 工人请求/报警/高度
+		strcat(drv_me_pt->send_data, " ");
+	}
 
 	strcat(drv_me_pt->send_data, drv_gps_pt->latitude); // 维度
 	strcat(drv_me_pt->send_data, " ");
@@ -494,13 +604,13 @@ void me3630_send(void)
 				WIFI_Usart("%s\r\n", drv_me_pt->send_data);
 				vTaskDelay(50);
 				thread_cslock_free(drv_me_pt->lock);
-				drv_me_pt->send_cnt = 500;
+				drv_me_pt->set_send_cnt(500);
 			}
 		}
 		else
 		{
 			thread_cslock_lock(drv_me_pt->lock, MaxTick);
-			drv_me_pt->send_cnt--;
+			drv_me_pt->set_send_cnt((drv_me_pt->send_cnt) - 1);
 			thread_cslock_free(drv_me_pt->lock);
 		}
 		/* code */
@@ -512,73 +622,153 @@ void me3630_send(void)
 void me3630_receive(void)
 {
 
-	char pRecStr[100] = {0};
+	// char pRecStr[100] = {0};
 
-	strcpy(pRecStr, (char *)USART_4G_Fram_Instance.Data_RX_BUF);
+	// strcpy(pRecStr, (char *)USART_4G_Fram_Instance.Data_RX_BUF);
 
-	if (strstr(pRecStr, "ERROR"))
+	if (strstr((char *)USART_4G_Fram_Instance.Data_RX_BUF, "ERROR"))
 	{
 		thread_cslock_lock(drv_me_pt->lock, MaxTick);
 		Close_Call();
 		drv_me_pt->tcp_connection_status = false;
 		thread_cslock_free(drv_me_pt->lock);
-
+		PCout(8) = 0;
 		clearFrame();
 		// WIFI_Usart("%s\r\n", "AT+");
 	}
-	if (strstr(pRecStr, "S44")) // 解锁锁回复
+	if (strstr((char *)USART_4G_Fram_Instance.Data_RX_BUF, "S44")) // 解锁锁回复
 	{
 		drv_moto_pt->request_status = No_Request;
 		drv_moto_pt->device_status = Device_Status_UnLock;
 		drv_voice_pt->unlock_finish();
 
-		drv_me_pt->send_cnt = 0;
+		drv_me_pt->set_send_cnt(0);
 
 		clearFrame();
 	}
-	if (strstr(pRecStr, "O33")) // 上锁回复
+	if (strstr((char *)USART_4G_Fram_Instance.Data_RX_BUF, "O33")) // 上锁回复
 	{
 
 		drv_moto_pt->request_status = No_Request;
 		drv_moto_pt->device_status = Device_Status_Lock;
 		drv_voice_pt->lock_request();
 
-		drv_me_pt->send_cnt = 0;
+		drv_me_pt->set_send_cnt(0);
 
 		clearFrame();
 	}
 
-	if (strstr(pRecStr, "P10") || strstr(pRecStr, "P11"))
+	if (strstr((char *)USART_4G_Fram_Instance.Data_RX_BUF, "P40") || strstr((char *)USART_4G_Fram_Instance.Data_RX_BUF, "P41"))
 	{
-		drv_voice_pt->sos();
+		char *temp;
+		char tempArray[10] = {0};
+		temp = strstr((char *)USART_4G_Fram_Instance.Data_RX_BUF, "P1");
+		if (temp)
+		{
+			strncpy(tempArray, temp + 1, 2);
+			u8 att_warn = atof(tempArray);
+			if (att_warn == 11)
+			{
+				drv_flash_pt->permissions_t.attitude_warn = 1;
+			}
+			else
+			{
+				drv_flash_pt->permissions_t.attitude_warn = 0;
+			}
+
+			memset(tempArray, 0, 10);
+			strncpy(tempArray, temp + 4, 2);
+			u8 emer_lock = atof(tempArray);
+
+			if (emer_lock == 21)
+			{
+				drv_flash_pt->permissions_t.emergency_unclock = 1;
+			}
+			else
+			{
+				drv_flash_pt->permissions_t.emergency_unclock = 0;
+			}
+
+			memset(tempArray, 0, 10);
+			strncpy(tempArray, temp + 7, 2);
+			u8 h_check = atof(tempArray);
+
+			if (h_check == 31)
+			{
+				drv_flash_pt->permissions_t.height_check = 1;
+			}
+			else
+			{
+				drv_flash_pt->permissions_t.height_check = 0;
+			}
+
+			memset(tempArray, 0, 10);
+			strncpy(tempArray, temp + 10, 2);
+			u8 h_auto_lock = atof(tempArray);
+
+			if (h_auto_lock == 41)
+			{
+				drv_flash_pt->permissions_t.height_auto_lock = 1;
+			}
+			else
+			{
+				drv_flash_pt->permissions_t.height_auto_lock = 0;
+			}
+
+			drv_flash_pt->write_to_flash();
+		}
+
 		clearFrame();
 	}
 }
 
 void me_proc(void)
 {
+
+	const EventBits_t xBitsToWaitFor = TCP_TASK_BIT;
+
 	while (1)
 	{
 		/* code */
+		/* 获取事件位 */
+		EventBits_t xEventGroupValue = xEventGroupWaitBits(drv_me_pt->tcp_group_handle, /* 事件组的句柄 */
+														  xBitsToWaitFor,			   /* 待测试的事件位 */
+														  pdFALSE,					   /* 满足添加时清除上面的事件位 */
+														  pdFALSE,					   /* 任意事件位被设置就会退出阻塞态 */
+														  portMAX_DELAY);			   /* 没有超时 */
+		/* 根据相应的事件位输出提示信息 */
+		if ((xEventGroupValue & TCP_TASK_BIT) != 0)
+		{
+			if (drv_me_pt->tcp_connection_status != true)
+			{
+				start_me();
+			}
+			else
+			{
+				me3630_receive();
+			}
+		}
 
-		if (drv_me_pt->tcp_connection_status != true)
-		{
-			start_me();
-		}
-		else
-		{
-			me3630_receive();
-		}
+
 	}
+}
+
+void set_send_cnt(u16 cnt)
+{
+	thread_cslock_lock(drv_me_pt->cnt_lock, MaxTick);
+	drv_me_pt->send_cnt = cnt;
+	thread_cslock_free(drv_me_pt->cnt_lock);
 }
 static Drv_Me_t drv_me_t = {
 	.tcp_connection_status = 0,
 	.me_proc = me_proc,
 	.me3630_send = me3630_send,
+	.set_send_cnt = set_send_cnt,
 	.imei_id = {0},
 	.send_step = ME_SEND_DEFAULT,
 	.send_data = {0},
 	.send_cnt = 500,
+	.tcp_task = tcp_task,
 };
 Drv_Me_pt drv_me_pt;
 
@@ -586,6 +776,8 @@ void init_me(void)
 {
 	drv_me_pt = &drv_me_t;
 	drv_me_pt->lock = thread_cslock_init("drv_me"),
+	drv_me_pt->cnt_lock = thread_cslock_init("cnt_lock"),
+	drv_me_pt->tcp_group_handle = xEventGroupCreate();
 
 	USART_4G_Init();
 }

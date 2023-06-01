@@ -13,6 +13,7 @@ typedef enum
 {
     KEY_STEP_WAIT,
     KEY_STEP_CLICK,
+    KEY_STEP_CLICK_RELEASE,
     KEY_STEP_LONG_PRESS,
     KEY_STEP_CONTINUOUS_PRESS,
 } KEY_STEP;
@@ -25,6 +26,8 @@ typedef enum
     KEY_LONG_PRESS,
     KEY_LONG_PRESS_CONTINUOUS,
     KEY_LONG_PRESS_RELEASE,
+    KEY_DOUBLE_CLICK,
+
 } KEY_EVENT;
 
 typedef struct
@@ -34,6 +37,8 @@ typedef struct
     uint16_t press_long_time;
     uint16_t press_continuous_long_time;
     uint8_t key_status;
+    uint8_t key_double_click_time;
+
 } KEY_PROPERTY;
 
 typedef void (*KEY_CALLBACK)(KEY_NAME key_name, KEY_EVENT key_event);
