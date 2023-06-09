@@ -12,9 +12,9 @@ typedef struct
     void (*yy_close)(void);
     void (*pose_warn)(void);
     void (*low_battery)(void);
-    void (*unlock_finish)(void);
-    void (*lock_request)(void);
-    void (*unlock_request)(void);
+    // void (*unlock_finish)(void);
+    // void (*lock_request)(void);
+    // void (*unlock_request)(void);
     void (*sos)(void);
     void (*danger_height)(void);
     void (*open_hooking)(void);

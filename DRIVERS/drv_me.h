@@ -66,6 +66,7 @@ typedef struct
 	thread_cslock_t cnt_lock;
 	EventGroupHandle_t tcp_group_handle;
 	u8 imei_id[20];
+	u8 jizhan_data[20];
 	u8 send_data[1024];
 	u16 send_cnt;
 	ME_STEP send_step;

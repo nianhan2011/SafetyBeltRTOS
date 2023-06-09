@@ -206,14 +206,14 @@ void get_gps(void)
                 temp4 = strstr((const char *)drv_gps_pt->buff, ",E,");
                 if (temp1 && temp2)
                 {
-                    strncpy(drv_gps_pt->latitude, temp1, temp2 - temp1 + 2);
+                    strncpy(drv_gps_pt->latitude, temp1+ 2, temp2 - temp1 -2);
 
                     // thread_cslock_lock(drv_gps_pt->lock, MaxTick);
                     // thread_cslock_free(drv_gps_pt->lock);
                 }
                 if (temp3 && temp4)
                 {
-                    strncpy(drv_gps_pt->longitude, temp3, temp4 - temp3 + 2);
+                    strncpy(drv_gps_pt->longitude, temp3 + 2, temp4 - temp3 -2);
 
                     // thread_cslock_lock(drv_gps_pt->lock, MaxTick);
                     // thread_cslock_free(drv_gps_pt->lock);
@@ -247,5 +247,5 @@ void init_gps(void)
 
     USART1_Init();
 
-    drv_gps_pt->set_gnss();
+    // drv_gps_pt->set_gnss();
 }

@@ -350,9 +350,9 @@ void init_voice(void)
     drv_voice_pt->yy_close = yy_close;
     drv_voice_pt->pose_warn = pose_warn;
     drv_voice_pt->low_battery = low_battery;
-    drv_voice_pt->unlock_finish = unlock_finish;
-    drv_voice_pt->lock_request = lock_request;
-    drv_voice_pt->unlock_request = unlock_request;
+    // drv_voice_pt->unlock_finish = unlock_finish;
+    // drv_voice_pt->lock_request = lock_request;
+    // drv_voice_pt->unlock_request = unlock_request;
     drv_voice_pt->sos = sos;
     drv_voice_pt->danger_height = danger_height;
     drv_voice_pt->open_hooking = open_hooking;

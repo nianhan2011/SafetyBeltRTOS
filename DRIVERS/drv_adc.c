@@ -4,6 +4,8 @@
 #include "Common.h"
 #include "drv_opt.h"
 #include "drv_voice.h"
+#include "motoControl.h"
+#include "drv_me.h"
 static Drv_ADC_t drv_adc_t;
 Drv_ADC_pt drv_adc_pt;
 
@@ -112,9 +114,9 @@ void get_adc()
 
 		drv_adc_pt->ADC_ConvertedValueLocal[0] = (float)drv_adc_pt->ADC_ConvertedValue[0] / 4096 * 3.3;
 		drv_adc_pt->ADC_ConvertedValueLocal[1] = (float)drv_adc_pt->ADC_ConvertedValue[1] / 4096 * 3.3;
- 
+
 		// drv_adc_pt->bat_percent = (drv_adc_pt->ADC_ConvertedValueLocal[1] * 2 - 3.5) *100/(4.2-3.5);
-		drv_adc_pt->bat_percent = (drv_adc_pt->ADC_ConvertedValueLocal[1] * 2) / 5.0 * 100;
+		drv_adc_pt->bat_percent = (drv_adc_pt->ADC_ConvertedValueLocal[1] * 2) / 4.2 * 100;
 		if (drv_adc_pt->bat_percent > 100)
 		{
 			drv_adc_pt->bat_percent = 100;
@@ -122,8 +124,8 @@ void get_adc()
 
 		if (drv_adc_pt->bat_percent < 10)
 		{
-			PAout(11) = 1;
-			PAout(8) = 0;
+			PAout(11) = 0;
+			PAout(8) = 1;
 
 			if (drv_adc_pt->bat_low_voice_cnt == 0)
 			{
@@ -137,8 +139,8 @@ void get_adc()
 		}
 		else
 		{
-			PAout(11) = 0;
-			PAout(8) = 1;
+			PAout(11) = 1;
+			PAout(8) = 0;
 			drv_adc_pt->bat_low_voice_cnt = 3000;
 		}
 
@@ -160,7 +162,7 @@ void startListen(void)
 {
 
 	taskENTER_CRITICAL(); // 进入临界区
-	u16 start_time = 200;
+	u16 start_time = 100;
 	while (start_time)
 	{
 		drv_adc_pt->ADC_ConvertedValueLocal[0] = (float)drv_adc_pt->ADC_ConvertedValue[0] / 4096 * 3.3;
@@ -173,7 +175,12 @@ void startListen(void)
 		timtick->delay(1);
 		start_time--;
 	}
-	drv_adc_pt->isStartTiming = 1;
+
+	drv_voice_pt->yyhy();
+
+	// vTaskDelay(1000);
+	// drv_adc_pt->isStartTiming = 1;
+
 	taskEXIT_CRITICAL();
 
 	vTaskDelete(NULL);
@@ -183,24 +190,35 @@ void shutDownListen(void)
 {
 	while (1)
 	{
-		drv_adc_pt->ADC_ConvertedValueLocal[0] = (float)drv_adc_pt->ADC_ConvertedValue[0] / 4096 * 3.3;
+
+		// drv_adc_pt->ADC_ConvertedValueLocal[0] = (float)drv_adc_pt->ADC_ConvertedValue[0] / 4096 * 3.3;
 
 		if (drv_adc_pt->ADC_ConvertedValueLocal[0] >= 0.3)
 		{
-			// u16 end_time = 300;
+			u16 end_time = 300;
 
-			// while (end_time)
-			// {
-			// 	drv_adc_pt->ADC_ConvertedValueLocal[0] = (float)drv_adc_pt->ADC_ConvertedValue[0] / 4096 * 3.3;
-			// 	if (drv_adc_pt->ADC_ConvertedValueLocal[0] >= 0.3)
-			// 	{
-			// 		break;
-			// 	}
-			// 	vTaskDelay(10);
-			// 	end_time--;
-			// }
-			// drv_voice_pt->yy_close();
-			// PBout(13) = 0;
+			u8 shouldShutDown = 1;
+			while (end_time)
+			{
+				drv_adc_pt->ADC_ConvertedValueLocal[0] = (float)drv_adc_pt->ADC_ConvertedValue[0] / 4096 * 3.3;
+				if (drv_adc_pt->ADC_ConvertedValueLocal[0] < 0.3)
+				{
+					shouldShutDown = 0;
+					break;
+				}
+
+				vTaskDelay(10);
+				end_time--;
+			}
+
+			if (shouldShutDown)
+			{
+				drv_moto_pt->device_status = Device_Status_Off;
+				drv_me_pt->set_send_cnt(0);
+				drv_voice_pt->yy_close();
+				vTaskDelay(2000);
+				PBout(13) = 0;
+			}
 		}
 		else
 		{

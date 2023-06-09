@@ -41,7 +41,9 @@ void main_task(void)
 
     taskENTER_CRITICAL(); // 进入临界区
 
-    // thread_create(drv_adc_pt->startListen, "startListen", 32, NULL, 4, NULL);
+    thread_create(drv_adc_pt->startListen, "startListen", 64, NULL, 4, NULL);
+    thread_create(drv_adc_pt->shutDownListen, "shutDownListen", 128, NULL, 2, NULL);
+
     thread_create(drv_me_pt->tcp_task, "tcp_task", 128, NULL, 3, NULL);
 
     thread_create(drv_adc_pt->get_adc, "get_adc", 64, NULL, 2, NULL);
@@ -58,6 +60,8 @@ void main_task(void)
 
     thread_create(drv_me_pt->me_proc, "me_proc", 128, NULL, 2, NULL);
     thread_create(drv_me_pt->me3630_send, "me3630_send", 128, NULL, 2, NULL);
+
+    thread_create(drv_moto_pt->get_status, "get_status", 128, NULL, 2, NULL);
 
     vTaskDelete(NULL);   // 删除AppTaskCreate任务
     taskEXIT_CRITICAL(); // 退出临界区

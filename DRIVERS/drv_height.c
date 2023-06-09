@@ -45,6 +45,7 @@ void get_barometric(void)
 
                         if (height_update >= 0.5 && drv_height_pt->set_zero_success)
                         {
+                            drv_moto_pt->height_warn = 1;
                             drv_me_pt->set_send_cnt(0);
                         }
                     }
@@ -83,10 +84,10 @@ void height_check(void)
                 drv_height_pt->danger_height_voice_cnt = 1500;
                 drv_voice_pt->danger_height();
                 drv_flash_pt->read_from_flash();
-                if (drv_flash_pt->permissions_t.height_auto_lock)
-                {
-                    drv_height_pt->danger_height_lock_timer = 1;
-                }
+                // if (drv_flash_pt->permissions_t.height_auto_lock)
+                // {
+                //     drv_height_pt->danger_height_lock_timer = 1;
+                // }
             }
             else
             {
@@ -119,12 +120,12 @@ void fall_check(void)
     {
         if (drv_height_pt->pre_height)
         {
-            height_update = drv_height_pt->pre_height - drv_height_pt->orign_height;
-            if (height_update >= 10.0 && drv_height_pt->set_zero_success)
-            {
-                drv_moto_pt->fail_warn = 1;
-                drv_me_pt->set_send_cnt(0);
-            }
+            // height_update = drv_height_pt->pre_height - drv_height_pt->orign_height;
+            // if (height_update >= 10.0 && drv_height_pt->set_zero_success)
+            // {
+            //     drv_moto_pt->fail_warn = 1;
+            //     drv_me_pt->set_send_cnt(0);
+            // }
         }
 
         drv_height_pt->pre_height = drv_height_pt->orign_height;
@@ -151,9 +152,17 @@ void set_height_zero(void)
         vTaskDelay(100);
     }
 
+    // vTaskDelay(1000);
+
+    // while ((drv_height_pt->height > 1.0) && (drv_height_pt->height < -1.0))
+    // {
+    /* code */
     drv_voice_pt->height_zero_finish();
+    drv_moto_pt->height_warn = 1;
     drv_height_pt->set_zero_success = 1;
+    drv_me_pt->set_send_cnt(0);
     vTaskDelete(NULL);
+    // }
 }
 
 void init_drv_height(void)

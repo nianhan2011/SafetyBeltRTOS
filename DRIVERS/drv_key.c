@@ -65,37 +65,37 @@ void key_handle(KEY_NAME key_name, KEY_EVENT key_event)
         {
             if (drv_me_pt->tcp_connection_status == 1)
             {
-                thread_cslock_lock(drv_me_pt->lock, MaxTick);
-                char mytaskstatebuffer[500];
-                vTaskList((char *)&mytaskstatebuffer);
-                WIFI_Usart("%s\r\n", mytaskstatebuffer);
-                vTaskDelay(50);
-                thread_cslock_free(drv_me_pt->lock);
+                // thread_cslock_lock(drv_me_pt->lock, MaxTick);
+                // char mytaskstatebuffer[500];
+                // vTaskList((char *)&mytaskstatebuffer);
+                // WIFI_Usart("%s\r\n", mytaskstatebuffer);
+                // vTaskDelay(50);
+                // thread_cslock_free(drv_me_pt->lock);
             }
         }
         else if (key_name == KEY_S1)
         {
-            drv_moto_pt->request_status = Lock_Request;
-            drv_me_pt->set_send_cnt(0);
+            // drv_moto_pt->request_status = Lock_Request;
+            // drv_me_pt->set_send_cnt(0);
 
-            drv_voice_pt->lock_request();
+            // drv_voice_pt->lock_request();
         }
 
         break;
     case KEY_LONG_PRESS:
         if (key_name == KEY_K1)
         {
-            drv_moto_pt->request_status = UnLock_Request;
-            // thread_cslock_lock(drv_me_pt->lock, MaxTick);
-            drv_me_pt->set_send_cnt(0);
-            // thread_cslock_free(drv_me_pt->lock);
-            drv_voice_pt->unlock_request();
-            // drv_height_pt->set_height_zero();
+            // drv_moto_pt->request_status = UnLock_Request;
+            // // thread_cslock_lock(drv_me_pt->lock, MaxTick);
+            // drv_me_pt->set_send_cnt(0);
+            // // thread_cslock_free(drv_me_pt->lock);
+            // drv_voice_pt->unlock_request();
+            // // drv_height_pt->set_height_zero();
 
-            // drv_height_pt->set_height_zero();
+            // // drv_height_pt->set_height_zero();
 
-            // u32 isSetZero = 1;
-            // xTaskNotify(drv_height_pt->set_height_zero, isSetZero, eSetValueWithOverwrite);
+            // // u32 isSetZero = 1;
+            // // xTaskNotify(drv_height_pt->set_height_zero, isSetZero, eSetValueWithOverwrite);
         }
         else if (key_name == KEY_S1)
         {
@@ -118,15 +118,15 @@ void key_handle(KEY_NAME key_name, KEY_EVENT key_event)
         }
         else if (key_name == KEY_S1)
         {
-            drv_flash_pt->read_from_flash();
+            // drv_flash_pt->read_from_flash();
 
-            if (drv_flash_pt->permissions_t.emergency_unclock)
-            {
-                drv_moto_pt->emer_unlock = 1;
-                drv_me_pt->set_send_cnt(0);
+            // if (drv_flash_pt->permissions_t.emergency_unclock)
+            // {
+            //     drv_moto_pt->emer_unlock = 1;
+            //     drv_me_pt->set_send_cnt(0);
 
-                drv_voice_pt->unlock_finish();
-            }
+            //     drv_voice_pt->unlock_finish();
+            // }
         }
 
         break;

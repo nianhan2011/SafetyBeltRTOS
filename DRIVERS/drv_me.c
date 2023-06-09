@@ -186,6 +186,40 @@ bool ME_GetIMEI()
 	}
 }
 
+bool ME_GetZCDS()
+{
+	char cCmd[20];
+
+	sprintf(cCmd, "AT+ZCDS?");
+	if (ME_Cmd(cCmd, "+ZCDS", 500, false))
+	{
+
+		u8 i = 0, j = 0, num_1, num_5;
+		while (i < strlen((const char *)USART_4G_Fram_Instance.Data_RX_BUF))
+		{
+			if (USART_4G_Fram_Instance.Data_RX_BUF[i] == ',')
+				j++;
+			i++;
+			if (j == 0)
+				num_1 = i;
+			if (j == 5)
+			{
+				num_5 = i;
+				break;
+			}
+		}
+		if (num_5 - num_1 - 2 < 20)
+			strncpy(drv_me_pt->jizhan_data, USART_4G_Fram_Instance.Data_RX_BUF + num_1 + 1, (num_5 - num_1 - 2));
+
+		clearFrame();
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
 bool ME_RSSI()
 {
 	char cCmd[20];
@@ -278,8 +312,10 @@ bool Close_Call()
 bool TCP_Connect()
 {
 	char cCmd[50];
+	 
+	// sprintf(cCmd, "AT+ZIPOPEN=1,0,115.236.153.174,25773");
+	sprintf(cCmd, "AT+ZIPOPEN=1,0,www.jsald.cn,8068");
 
-	sprintf(cCmd, "AT+ZIPOPEN=1,0,115.236.153.174,25773");
 	if (ME_Cmd(cCmd, "+ZIPSTAT: 1,1", 500, true))
 	{
 		return true;
@@ -342,7 +378,7 @@ void start_me()
 
 restart:
 
-	drv_voice_pt->yyhy();
+	// drv_voice_pt->yyhy();
 	GPIO_SetBits(GPIOC, GPIO_Pin_9);
 	vTaskDelay(200);
 	GPIO_ResetBits(GPIOC, GPIO_Pin_9);
@@ -357,6 +393,13 @@ restart:
 
 	timeout = 50;
 	while (!ME_GetIMEI())
+	{
+		if ((timeout--) == 0)
+			goto restart;
+	}
+
+	timeout = 50;
+	while (!ME_GetZCDS())
 	{
 		if ((timeout--) == 0)
 			goto restart;
@@ -421,7 +464,7 @@ void tcp_task()
 
 restart:
 
-	drv_voice_pt->yyhy();
+	// drv_voice_pt->yyhy();
 	GPIO_SetBits(GPIOC, GPIO_Pin_9);
 	vTaskDelay(200);
 	GPIO_ResetBits(GPIOC, GPIO_Pin_9);
@@ -436,6 +479,13 @@ restart:
 
 	timeout = 50;
 	while (!ME_GetIMEI())
+	{
+		if ((timeout--) == 0)
+			goto restart;
+	}
+
+	timeout = 50;
+	while (!ME_GetZCDS())
 	{
 		if ((timeout--) == 0)
 			goto restart;
@@ -501,6 +551,9 @@ restart:
 
 static void pre_send_data(void)
 {
+
+	taskENTER_CRITICAL(); // 进入临界区
+
 	memset(drv_me_pt->send_data, 0, 1024);
 
 	strcat(drv_me_pt->send_data, drv_me_pt->imei_id); // imei
@@ -516,9 +569,13 @@ static void pre_send_data(void)
 		break;
 	case Device_Status_Lock:
 		strcat(drv_me_pt->send_data, "C1"); // 已上锁
+		// strcat(drv_me_pt->send_data, "00"); // 已上锁
+
 		break;
 	case Device_Status_UnLock:
 		strcat(drv_me_pt->send_data, "O2"); // 已解锁
+		// strcat(drv_me_pt->send_data, "00"); // 已上锁
+
 		break;
 	}
 	strcat(drv_me_pt->send_data, " ");
@@ -531,61 +588,106 @@ static void pre_send_data(void)
 	strcat(drv_me_pt->send_data, bat_percent_str); // 电量
 	strcat(drv_me_pt->send_data, " ");
 
-	switch (drv_moto_pt->request_status)
-	{
-	case No_Request:
-		/* code */
-		break;
-	case Lock_Request:
-		strcat(drv_me_pt->send_data, "C11"); // 请求上锁
-		strcat(drv_me_pt->send_data, " ");
-		break;
-	case UnLock_Request:
-		strcat(drv_me_pt->send_data, "C22"); // 请求解锁
-		strcat(drv_me_pt->send_data, " ");
-		break;
-	}
+	// strcat(drv_me_pt->send_data, "00"); //请求
+	// strcat(drv_me_pt->send_data, " ");
 
-	if ( drv_moto_pt->fail_warn)
+	// switch (drv_moto_pt->request_status)
+	// {
+	// case No_Request:
+	// 	strcat(drv_me_pt->send_data, "00"); 
+
+	// 	/* code */
+	// 	break;
+	// case Lock_Request:
+	// 	strcat(drv_me_pt->send_data, "C11"); // 请求上锁
+	// 	strcat(drv_me_pt->send_data, " ");
+	// 	break;
+	// case UnLock_Request:
+	// 	strcat(drv_me_pt->send_data, "C22"); // 请求解锁
+	// 	strcat(drv_me_pt->send_data, " ");
+	// 	break;
+	// }
+
+	if (drv_moto_pt->attitude_warn)
 	{
-		drv_moto_pt->fail_warn = 0;
-		strcat(drv_me_pt->send_data, "WG1"); // 坠落报警
+		drv_moto_pt->attitude_warn = 0;
+		if (drv_moto_pt->zitai_status == Zitai_Status_Safe)
+		{
+			strcat(drv_me_pt->send_data, "W10");
+		}
+		else
+		{
+			strcat(drv_me_pt->send_data, "W11");
+		}
+		strcat(drv_me_pt->send_data, " ");
+	} else if (drv_moto_pt->snap_warn)
+	{
+		drv_moto_pt->snap_warn = 0;
+		if (drv_moto_pt->yaokou_status == Yaokou_Status_Lock)
+		{
+			strcat(drv_me_pt->send_data, "W20");
+		}
+		else
+		{
+			strcat(drv_me_pt->send_data, "W21");
+		}
 		strcat(drv_me_pt->send_data, " ");
 	}
-
-	 if (drv_moto_pt->sos)
+	// } else if (drv_moto_pt->fail_warn)
+	// {
+	// 	drv_moto_pt->fail_warn = 0;
+	// 	strcat(drv_me_pt->send_data, "WG1"); // 坠落报警
+	// 	strcat(drv_me_pt->send_data, " ");
+	 else if (drv_moto_pt->sos)
 	{
 		drv_moto_pt->sos = 0;
 		strcat(drv_me_pt->send_data, "SOS"); // SOS
 		strcat(drv_me_pt->send_data, " ");
-	}
-
-	if (drv_moto_pt->emer_unlock)
+	} else if (drv_moto_pt->height_warn)
 	{
-		drv_moto_pt->emer_unlock = 0;
-		strcat(drv_me_pt->send_data, "WS1"); // SOS
+		drv_moto_pt->height_warn = 0;
+
+			if (drv_height_pt->set_zero_success)
+		{
+			char height_str[10];
+			sprintf(height_str, "T%d", drv_height_pt->height);
+			strcat(drv_me_pt->send_data, height_str); // 工人请求/报警/高度
+			strcat(drv_me_pt->send_data, " ");
+		}
+	} else 
+	{
+		strcat(drv_me_pt->send_data, "000");
 		strcat(drv_me_pt->send_data, " ");
 	}
+
+
+	// if (drv_moto_pt->emer_unlock)
+	// {
+	// 	drv_moto_pt->emer_unlock = 0;
+	// 	strcat(drv_me_pt->send_data, "WS1"); 
+	// 	strcat(drv_me_pt->send_data, " ");
+	// }
 
 	// strcat(drv_me_pt->send_data, "W11"); // 工人请求/报警/高度
 	// strcat(drv_me_pt->send_data, " ");
 
-	if (drv_height_pt->set_zero_success)
+
+
+	if (*(drv_gps_pt->latitude) && *(drv_gps_pt->longitude))
 	{
-		char height_str[10];
-		sprintf(height_str, "T%d", drv_height_pt->height);
-		strcat(drv_me_pt->send_data, height_str); // 工人请求/报警/高度
+		strcat(drv_me_pt->send_data, drv_gps_pt->latitude); // 维度
+		strcat(drv_me_pt->send_data, " ");
+
+		strcat(drv_me_pt->send_data, drv_gps_pt->longitude); // 经度
+		strcat(drv_me_pt->send_data, " ");
+	} else {
 		strcat(drv_me_pt->send_data, " ");
 	}
 
-	strcat(drv_me_pt->send_data, drv_gps_pt->latitude); // 维度
+	strcat(drv_me_pt->send_data, drv_me_pt->jizhan_data); // 基站
 	strcat(drv_me_pt->send_data, " ");
 
-	strcat(drv_me_pt->send_data, drv_gps_pt->longitude); // 经度
-	strcat(drv_me_pt->send_data, " ");
-
-	strcat(drv_me_pt->send_data, "460.0"); // 基站
-	strcat(drv_me_pt->send_data, " ");
+	taskEXIT_CRITICAL(); // 退出临界区
 }
 
 void me3630_send(void)
@@ -601,10 +703,14 @@ void me3630_send(void)
 			{
 				pre_send_data();
 				thread_cslock_lock(drv_me_pt->lock, MaxTick);
+				taskENTER_CRITICAL(); // 进入临界区
+
 				WIFI_Usart("%s\r\n", drv_me_pt->send_data);
+
+				taskEXIT_CRITICAL();
 				vTaskDelay(50);
 				thread_cslock_free(drv_me_pt->lock);
-				drv_me_pt->set_send_cnt(500);
+				drv_me_pt->set_send_cnt(5000);
 			}
 		}
 		else
@@ -636,24 +742,24 @@ void me3630_receive(void)
 		clearFrame();
 		// WIFI_Usart("%s\r\n", "AT+");
 	}
+
 	if (strstr((char *)USART_4G_Fram_Instance.Data_RX_BUF, "S44")) // 解锁锁回复
 	{
-		drv_moto_pt->request_status = No_Request;
-		drv_moto_pt->device_status = Device_Status_UnLock;
-		drv_voice_pt->unlock_finish();
-
-		drv_me_pt->set_send_cnt(0);
+		// drv_moto_pt->request_status = No_Request;
+		// drv_moto_pt->device_status = Device_Status_UnLock;
+ 
+		// drv_me_pt->set_send_cnt(0);
 
 		clearFrame();
 	}
 	if (strstr((char *)USART_4G_Fram_Instance.Data_RX_BUF, "O33")) // 上锁回复
 	{
 
-		drv_moto_pt->request_status = No_Request;
-		drv_moto_pt->device_status = Device_Status_Lock;
-		drv_voice_pt->lock_request();
+		// drv_moto_pt->request_status = No_Request;
+		// drv_moto_pt->device_status = Device_Status_Lock;
+		// drv_voice_pt->lock_request();
 
-		drv_me_pt->set_send_cnt(0);
+		// drv_me_pt->set_send_cnt(0);
 
 		clearFrame();
 	}
@@ -755,9 +861,9 @@ void me_proc(void)
 
 void set_send_cnt(u16 cnt)
 {
-	thread_cslock_lock(drv_me_pt->cnt_lock, MaxTick);
+	// thread_cslock_lock(drv_me_pt->cnt_lock, MaxTick);
 	drv_me_pt->send_cnt = cnt;
-	thread_cslock_free(drv_me_pt->cnt_lock);
+	// thread_cslock_free(drv_me_pt->cnt_lock);
 }
 static Drv_Me_t drv_me_t = {
 	.tcp_connection_status = 0,
@@ -765,6 +871,7 @@ static Drv_Me_t drv_me_t = {
 	.me3630_send = me3630_send,
 	.set_send_cnt = set_send_cnt,
 	.imei_id = {0},
+	.jizhan_data = {0},
 	.send_step = ME_SEND_DEFAULT,
 	.send_data = {0},
 	.send_cnt = 500,
