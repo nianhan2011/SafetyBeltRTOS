@@ -7,8 +7,8 @@ typedef struct
 {
     u8 buff[101];
     u8 buff_length;
-    char latitude[20];  // 纬度
-    char longitude[20]; // 经度
+    char latitude[50];  // 纬度
+    char longitude[50]; // 经度
     thread_cslock_t lock;
     void (*get_gps)(void);
     void (*set_gnss)(void);

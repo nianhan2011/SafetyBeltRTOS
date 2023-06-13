@@ -206,14 +206,20 @@ void get_gps(void)
                 temp4 = strstr((const char *)drv_gps_pt->buff, ",E,");
                 if (temp1 && temp2)
                 {
-                    strncpy(drv_gps_pt->latitude, temp1+ 2, temp2 - temp1 -2);
+                    if (temp2 > temp1)
+                    {
+                        strncpy(drv_gps_pt->latitude, temp1 + 2, temp2 - temp1 - 2);
+                    }
 
                     // thread_cslock_lock(drv_gps_pt->lock, MaxTick);
                     // thread_cslock_free(drv_gps_pt->lock);
                 }
                 if (temp3 && temp4)
                 {
-                    strncpy(drv_gps_pt->longitude, temp3 + 2, temp4 - temp3 -2);
+                    if (temp4 > temp3)
+                    {
+                        strncpy(drv_gps_pt->longitude, temp3 + 2, temp4 - temp3 - 2);
+                    }
 
                     // thread_cslock_lock(drv_gps_pt->lock, MaxTick);
                     // thread_cslock_free(drv_gps_pt->lock);
@@ -238,8 +244,8 @@ void init_gps(void)
     drv_gps_pt->set_gnss = set_gnss;
     drv_gps_pt->lock = thread_cslock_init("drv_gps");
     memset(drv_gps_pt->buff, 0, 101);
-    memset(drv_gps_pt->latitude, 0, 20);
-    memset(drv_gps_pt->longitude, 0, 20);
+    memset(drv_gps_pt->latitude, 0, 50);
+    memset(drv_gps_pt->longitude, 0, 50);
 
     drv_gps_pt->buff_length = 0;
     drv_gps_pt->get_gps = get_gps;
