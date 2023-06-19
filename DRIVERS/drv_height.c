@@ -61,7 +61,7 @@ void height_check(void)
 {
     while (1)
     {
-        if (drv_height_pt->orign_height >= 2.0 && drv_height_pt->set_zero_success)
+        if (drv_height_pt->orign_height >= 2.0 && drv_height_pt->set_zero_success && (drv_moto_pt->device_status == Device_Status_UnLock || drv_moto_pt->zitai_status == Zitai_Status_UnSafe))
         {
 
             if (drv_height_pt->danger_height_lock_timer)
@@ -76,7 +76,7 @@ void height_check(void)
                 else
                 {
                     drv_height_pt->danger_height_lock_cnt--;
-                }
+                }   
                 continue;
             }
             if (drv_height_pt->danger_height_voice_cnt == 0)
